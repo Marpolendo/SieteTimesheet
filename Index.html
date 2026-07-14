@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SIETE · Crew Ledger</title>
+<title>SIETE · Timesheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -428,8 +428,21 @@
   .team-progress.overtime span{background:var(--warn);}
   .team-card-actions{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); flex-wrap:wrap;}
   .team-card-actions .primary{flex:1 1 170px; min-height:40px;}
-  .team-admin-actions{display:flex; gap:6px; flex-wrap:wrap;}
-  .team-admin-actions .btn{padding:6px 10px; font-size:12px;}
+  .team-card-actions .edit-member{flex:0 0 auto; min-height:40px;}
+
+  .team-edit-modal{max-width:470px; border-radius:12px; padding:0; overflow:hidden;}
+  .team-edit-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:18px 20px 15px; border-bottom:1px solid var(--line);}
+  .team-edit-name{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; font-size:25px; line-height:1.05; text-transform:uppercase;}
+  .team-edit-sub{font-size:13px; color:var(--steel); margin-top:4px;}
+  .team-edit-list{display:grid; gap:9px; padding:16px 20px 20px;}
+  .team-edit-action{width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); padding:13px 14px; text-align:left;}
+  .team-edit-action:hover{border-color:var(--ink); box-shadow:var(--sh-1);}
+  .team-edit-action strong{display:block; font-size:15px;}
+  .team-edit-action small{display:block; color:var(--steel); font-size:12px; margin-top:2px;}
+  .team-edit-action .arrow{font-size:20px; color:var(--steel);}
+  .team-edit-action.danger{border-color:#F0C6C8; color:var(--red);}
+  .team-edit-action.danger small,.team-edit-action.danger .arrow{color:var(--red);}
+  .profile-readonly{background:#F5F4F1; color:var(--steel);}
 
   details.team-add-panel{background:#fff; border:1px solid var(--line); border-top:3px solid var(--ink); border-radius:10px; box-shadow:var(--sh-card); margin-bottom:18px;}
   details.team-add-panel summary{cursor:pointer; list-style:none; padding:15px 17px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; font-size:20px; letter-spacing:.02em; text-transform:uppercase;}
@@ -474,8 +487,10 @@
     .team-card-head{display:block;}
     .team-status{margin-top:10px;}
     .team-card-actions{align-items:stretch;}
-    .team-admin-actions{width:100%;}
-    .team-admin-actions .btn{flex:1;}
+    .team-card-actions .primary{flex:1 1 auto;}
+    .team-card-actions .edit-member{flex:0 0 auto;}
+    .team-edit-modal{width:100%; max-width:none; border-radius:12px 12px 0 0; align-self:flex-end;}
+    .modal-bg:has(.team-edit-modal){align-items:flex-end; padding:0;}
     .review-modal-head{padding:15px 16px 13px;}
     .review-modal-body{padding:14px 16px 18px;}
     .review-week-row{grid-template-columns:1fr;}
@@ -495,8 +510,7 @@
   <div style="max-width:380px; margin:0 auto; padding:70px 20px;">
     <div style="margin-bottom:34px;">
       <div class="logo login"></div>
-      <div style="margin-top:14px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:19px; letter-spacing:.16em; color:#fff;">CREW LEDGER</div>
-      <div style="color:#9A9DA0; font-size:14px; margin-top:6px;">Time, requests, and payroll — one book.</div>
+      <div style="margin-top:14px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:23px; letter-spacing:.16em; color:#fff;">TIMESHEET</div>
     </div>
     <div style="background:#fff; padding:22px; border-top:4px solid var(--red);">
       <label class="field"><div class="lbl">Account</div><select id="loginUser"></select></label>
@@ -504,7 +518,7 @@
         <input id="loginPin" type="password" inputmode="numeric" placeholder="••••••" />
       </label>
       <div id="loginErr" class="err hidden"></div>
-      <button class="btn full" id="loginBtn"><span>Clock in</span></button>
+      <button class="btn full" id="loginBtn"><span>Log in</span></button>
     </div>
   </div>
 </div>
@@ -606,7 +620,7 @@ async function showLogin() {
   const { data, error } = await sb.rpc("list_usernames");
   if (error) { sel.innerHTML = '<option>Could not load accounts</option>'; return; }
   sel.innerHTML = (data || []).map((u) =>
-    `<option value="${esc(u.username)}">${esc(u.display_name)} — ${u.role === "admin" ? "Admin" : "Crew"}</option>`).join("");
+    `<option value="${esc(u.username)}">${esc(firstName(u.display_name))}</option>`).join("");
 }
 
 async function doLogin() {
@@ -1457,9 +1471,13 @@ async function callFn(body) {
 
 let TEAM_PAYTYPE = "hourly";
 let TEAM_FILTER = "all";
+let TEAM_MEMBERS = new Map();
 
 function formatHours(n) {
   return Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+function firstName(name) {
+  return String(name || "").trim().split(/\s+/)[0] || "Account";
 }
 function initials(name) {
   return String(name || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0] || "").join("").toUpperCase() || "?";
@@ -1487,8 +1505,8 @@ async function viewTeam(v) {
   if (sheetErr) throw sheetErr;
 
   const employees = emps || [];
+  TEAM_MEMBERS = new Map(employees.map((u) => [u.id, u]));
   const sheetByUser = new Map((sheets || []).map((s) => [s.user_id, s]));
-  const activeEmployees = employees.filter((u) => u.active);
   const cardData = employees.map((u) => {
     const sheet = sheetByUser.get(u.id) || null;
     const total = (sheet?.time_entries || []).reduce((sum, e) => sum + Number(e.hours || 0), 0);
@@ -1504,7 +1522,6 @@ async function viewTeam(v) {
     declined: activeData.filter((x) => x.status.filter === "declined").length,
     approved: activeData.filter((x) => x.status.filter === "approved").length,
   };
-  const teamHours = activeData.reduce((sum, x) => sum + x.total, 0);
   const filtered = TEAM_FILTER === "all" ? cardData : cardData.filter((x) => x.status.filter === TEAM_FILTER);
 
   const filters = [
@@ -1548,11 +1565,7 @@ async function viewTeam(v) {
       <div class="team-progress ${hoursClass}" style="--progress:${progress}%"><span></span></div>
       <div class="team-card-actions">
         <button class="btn sm dark primary" onclick="openTeamTimesheet('${u.id}')"><span>${actionLabel}</span></button>
-        <div class="team-admin-actions">
-          <button class="btn sm ghost" onclick='editPay(${esc(JSON.stringify(u))})'><span>Pay</span></button>
-          <button class="btn sm ghost" onclick="resetPin('${u.id}','${esc(u.display_name)}')"><span>PIN</span></button>
-          <button class="btn sm danger" onclick="toggleActive('${u.id}', ${u.active})"><span>${u.active ? "Disable" : "Enable"}</span></button>
-        </div>
+        <button class="btn sm ghost edit-member" onclick="openTeamMemberEdit('${u.id}')"><span>Edit</span></button>
       </div>
     </article>`;
   }).join("") : emptyBox("No employees match this filter.");
@@ -1561,20 +1574,13 @@ async function viewTeam(v) {
     ? `<label class="field"><div class="lbl">Rate ($/hr)</div><input id="t_rate" type="number" min="0" step="0.5" /></label>`
     : `<label class="field"><div class="lbl">Salary / week ($)</div><input id="t_sal" type="number" min="0" step="25" /></label>`;
 
-  v.innerHTML = `${statCards([
-      { k: "Active employees", v: activeEmployees.length, sub: `${employees.length} total` },
-      { k: "Hours this week", v: formatHours(teamHours), accent: teamHours ? "red" : "" },
-      { k: "Submitted", v: counts.submitted, accent: counts.submitted ? "warn" : "" },
-      { k: "Draft / not started", v: counts.draft },
-      { k: "Sent back", v: counts.declined, accent: counts.declined ? "red" : "" },
-    ])}
-    <div class="team-toolbar">
-      ${sec("Crew", `<span class="steel" style="font-size:13px;">${weekRange(currentWeek)}</span>`)}
+  v.innerHTML = `<div class="team-toolbar">
+      ${sec("Team", `<span class="steel" style="font-size:13px;">${employees.length} ${employees.length === 1 ? "employee" : "employees"} · ${weekRange(currentWeek)}</span>`)}
     </div>
     <div class="team-filters" role="group" aria-label="Filter employees by timesheet status">${filters}</div>
     <div class="team-grid">${cards}</div>
     <details class="team-add-panel">
-      <summary>Add crew member</summary>
+      <summary>Add team member</summary>
       <div class="team-add-body">
         <div class="grid2">
           <label class="field"><div class="lbl">Display name</div><input id="t_name" placeholder="Full name" /></label>
@@ -1591,7 +1597,7 @@ async function viewTeam(v) {
           <label class="field"><div class="lbl">Tax withholding (%)</div><input id="t_tax" type="number" min="0" max="60" step="0.5" /></label>
         </div>
         <div id="t_err" class="err hidden"></div>
-        <button class="btn" id="t_add"><span>Add crew member</span></button>
+        <button class="btn" id="t_add"><span>Add team member</span></button>
       </div>
     </details>`;
   $("t_add").onclick = addCrew;
@@ -1704,13 +1710,88 @@ async function addCrew() {
   if (!/^[a-z0-9._-]{2,32}$/.test(body.username)) return bad("Username: 2–32 chars, a–z 0–9 . _ -");
   if (!/^\d{4,8}$/.test(body.pin)) return bad("PIN must be 4–8 digits.");
   $("t_add").disabled = true;
-  try { await callFn(body); ping("Crew member added"); render(); }
+  try { await callFn(body); ping("Team member added"); render(); }
   catch (e) { bad(e.message); $("t_add").disabled = false; }
 }
+function openTeamMemberEdit(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  const stateLabel = u.active ? "Disable employee" : "Enable employee";
+  const stateHelp = u.active ? "Prevent this employee from logging in." : "Restore this employee's access.";
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal team-edit-modal">
+    <div class="team-edit-head">
+      <div><div class="team-edit-name">Edit ${esc(firstName(u.display_name))}</div><div class="team-edit-sub">Employee settings and account access</div></div>
+      <button type="button" class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+    </div>
+    <div class="team-edit-list">
+      <button type="button" class="team-edit-action" onclick="editProfile('${u.id}')">
+        <span><strong>Edit profile</strong><small>Update the employee's display name.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action" onclick="manageTeamPay('${u.id}')">
+        <span><strong>Manage pay</strong><small>Pay type, rate, salary, and withholding.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action" onclick="resetTeamPin('${u.id}')">
+        <span><strong>Reset PIN</strong><small>Create a new 4–8 digit login PIN.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action ${u.active ? "danger" : ""}" onclick="changeTeamAccess('${u.id}')">
+        <span><strong>${stateLabel}</strong><small>${stateHelp}</small></span><span class="arrow">›</span>
+      </button>
+    </div>
+  </div></div>`;
+}
+function editProfile(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Edit profile</h2></div>
+    <label class="field"><div class="lbl">Employee name</div><input id="profile_name" value="${esc(u.display_name)}" autocomplete="name" /></label>
+    <label class="field"><div class="lbl">Login username</div><input class="profile-readonly" value="${esc(u.username)}" disabled /></label>
+    <div class="hint" style="margin:-8px 0 15px;">The login username is tied to the account and cannot be changed from this screen.</div>
+    <div id="profile_err" class="err hidden"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn" id="profile_save"><span>Save profile</span></button>
+      <button class="btn ghost" onclick="openTeamMemberEdit('${u.id}')"><span>Back</span></button>
+    </div>
+  </div></div>`;
+  $("profile_save").onclick = () => saveProfile(u.id);
+  setTimeout(() => $("profile_name")?.focus(), 0);
+}
+async function saveProfile(id) {
+  const name = $("profile_name").value.trim();
+  const err = $("profile_err");
+  if (!name) { err.textContent = "Employee name is required."; err.classList.remove("hidden"); return; }
+  $("profile_save").disabled = true;
+  const { error } = await sb.from("profiles").update({ display_name: name }).eq("id", id);
+  if (error) { $("profile_save").disabled = false; return fail(error); }
+  closeModal();
+  ping("Profile updated");
+  render();
+}
+function manageTeamPay(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  editPay(u);
+}
+function resetTeamPin(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  closeModal();
+  resetPin(u.id, u.display_name);
+}
+function changeTeamAccess(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  const action = u.active ? "disable" : "enable";
+  if (!confirm(`${action[0].toUpperCase() + action.slice(1)} ${u.display_name}?`)) return;
+  closeModal();
+  toggleActive(u.id, u.active);
+}
+
 function editPay(u) {
   const root = $("modal-root");
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="sec-title"><h2><span class="slash">/</span> ${esc(u.display_name)} — pay</h2></div>
+    <div class="sec-title"><h2><span class="slash">/</span> Manage pay</h2></div>
+    <p class="steel" style="font-size:14px;margin-top:-6px;">${esc(u.display_name)}</p>
     <label class="field"><div class="lbl">Pay type</div>
       <select id="e_type"><option value="hourly" ${u.pay_type === "hourly" ? "selected" : ""}>Hourly</option><option value="salary" ${u.pay_type === "salary" ? "selected" : ""}>Salary</option></select></label>
     <div class="grid2">
@@ -1720,7 +1801,7 @@ function editPay(u) {
     <label class="field"><div class="lbl">Tax withholding (%)</div><input id="e_tax" type="number" min="0" max="60" step="0.5" value="${u.tax_pct || 0}" /></label>
     <div style="display:flex;gap:10px;">
       <button class="btn" onclick="savePay('${u.id}')"><span>Save</span></button>
-      <button class="btn ghost" onclick="closeModal()"><span>Cancel</span></button>
+      <button class="btn ghost" onclick="openTeamMemberEdit('${u.id}')"><span>Back</span></button>
     </div></div></div>`;
 }
 async function savePay(id) {
