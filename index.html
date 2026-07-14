@@ -509,7 +509,7 @@
 
 
   /* ---- receipt photos ---- */
-  .receipt-note{margin:0 0 9px; font-size:13px;}
+  .receipt-note{margin:0 0 11px; font-size:13px; border-radius:9px;}
   .receipt-add{width:100%; border:1px dashed var(--line); border-radius:9px; background:#fff; color:var(--steel);
     padding:12px; min-height:46px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px;
     letter-spacing:.06em; text-transform:uppercase; transition:border-color .15s, color .15s;}
@@ -522,17 +522,77 @@
   .rthumb-x{position:absolute; top:2px; right:2px; width:22px; height:22px; border:0; border-radius:50%;
     background:rgba(22,24,26,.72); color:#fff; font-size:15px; line-height:1; display:grid; place-items:center;}
   .rthumb-x:hover{background:var(--red);}
-  .receipt-tag{display:inline-flex; align-items:center; gap:6px; margin-top:8px; border-radius:7px;
-    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:.06em;
-    text-transform:uppercase; padding:4px 10px;}
+  .receipt-tag{display:inline-flex; align-items:center; gap:6px; border-radius:7px; font-family:'Barlow Condensed',sans-serif;
+    font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; padding:5px 10px; min-height:30px;}
   .receipt-tag.has{border:1px solid var(--line); background:#fff; color:var(--ink);}
   .receipt-tag.has:hover{border-color:var(--red); color:var(--red);}
   .receipt-tag.none{background:#FFF0D6; color:var(--warn);}
   .receipt-tag .cam{font-size:14px;}
   .receipt-modal{max-width:560px;}
-  .receipt-full{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px;
-    max-height:56vh; overflow:auto;}
+  .receipt-full{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;
+    margin-bottom:14px; max-height:56vh; overflow:auto;}
   .receipt-full img{width:100%; border:1px solid var(--line); border-radius:8px; display:block;}
+
+  /* ---- requests page ---- */
+  .reqpage .card{border-radius:12px; padding:16px;}
+  .reqpage .seg button{border-radius:9px; min-height:44px;}
+  .reqpage .field .lbl{font-family:'Barlow',sans-serif; font-size:14px; font-weight:600;
+    letter-spacing:0; text-transform:none; color:var(--ink); margin-bottom:6px;}
+  .reqpage input,.reqpage textarea{border:1px solid #D4D2CD; border-radius:9px; padding:11px 12px; font-size:16px;}
+  .reqpage .btn{min-height:46px;}
+  .reqrow{background:#fff; border-left:4px solid var(--red); border-radius:10px; box-shadow:var(--sh-card);
+    padding:13px 14px; margin-bottom:10px;}
+  .reqrow.perdiem{border-left-color:var(--steel);}
+  .reqrow-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .reqrow-kind{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:13px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--red);}
+  .reqrow.perdiem .reqrow-kind{color:var(--steel);}
+  .reqrow-amt{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px;}
+  .reqrow-meta{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--steel); margin-top:2px;}
+  .reqrow-note{font-size:13.5px; color:var(--steel); margin-top:7px; line-height:1.35;}
+  .reqrow-foot{display:flex; align-items:center; margin-top:9px;}
+  @media (max-width:820px){
+    .receipt-add{min-height:52px;}
+    .rthumb{width:86px; height:86px;}
+  }
+
+  /* ============ DESKTOP: a real seven-day week, no rail ============ */
+  .addline{display:none;}   /* mobile adds lines with the FAB */
+
+  @media (min-width:821px){
+    main{max-width:1240px;}
+    .head-in,.tabs-in{max-width:1240px;}
+    .daypicker-shell{display:none;}          /* every day is visible; the picker is a phone affordance */
+    .dayrail{margin-bottom:20px;}
+    .weekgrid{grid-auto-flow:row; grid-template-columns:repeat(7,minmax(0,1fr)); grid-auto-columns:auto;
+      overflow:visible; scroll-snap-type:none; gap:9px; padding:2px 0 0;}
+    .daycol{scroll-snap-align:none; min-width:0; border-top-color:var(--line);}
+    .daycol.today{border-top-color:var(--red);}
+    .daycol.active-day{min-width:0; border-top-color:var(--line); box-shadow:var(--sh-card);}
+    .daycol.active-day.today{border-top-color:var(--red);}
+    .daycol:hover{box-shadow:var(--sh-2);}
+    .daycol h4{padding:11px 12px 10px; grid-template-columns:minmax(0,1fr) auto; gap:2px 8px;}
+    .daycol h4 .day-title{font-size:14px; letter-spacing:.06em;}
+    .daycol h4 .dt{font-size:11px;}
+    .daycol h4 .day-progress{margin-top:4px; flex-direction:column; align-items:flex-start; gap:1px;}
+    .daycol h4 .tot,.daycol h4 .remaining{font-size:11px;}
+    .daybody{padding:9px; gap:8px;}
+
+    /* compact cards; the editor is a modal at this width */
+    .entrycard .entryedit{display:none !important;}
+    .entrysummary{grid-template-columns:minmax(0,1fr) auto;}
+    .entry-toggle{padding:10px 4px 10px 10px; grid-template-columns:minmax(0,1fr) auto; gap:5px;}
+    .entry-project{font-size:13.5px;}
+    .entry-note{font-size:12px;}
+    .entry-hours{font-size:12px; align-self:start; padding-top:1px;}
+    .entry-chevron{display:none;}
+    .entry-menu-btn{width:30px; height:34px; font-size:19px;}
+    .entry-menu{top:40px; right:4px; width:168px;}
+    .day-empty{padding:12px 8px;}
+    .addline{display:block; border-radius:8px; padding:8px; font-size:12px;}
+    .floating-add{display:none;}             /* per-column add buttons instead */
+    .week-header .week-actions{min-width:210px;}
+  }
 </style>
 </head>
 <body>
@@ -601,6 +661,9 @@ const money = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const WEEK_ENTRIES = new Map();   // id -> entry, so the desktop editor can read it
+const PENDING_SAVES = new Set();  // in-flight writes, so we never render mid-save
+const isDesktop = () => window.matchMedia("(min-width:821px)").matches;
 
 function mondayOf(d) {
   const t = new Date(d + "T00:00:00");
@@ -624,7 +687,7 @@ function ping(msg, bad) {
 function fail(e) { ping(typeof e === "string" ? e : (e?.message || "Something went wrong"), true); }
 
 /* ---------- payroll math (weekly) ---------- */
-/* Overtime is figured per WEEK (the unit of approval), not on the pooled
+/* Overtime is figured per WEEK (the unit of approval), never on the pooled
    total — 45 hrs one week + 35 the next is 5 hrs OT, not zero. Hourly only. */
 function otConf(p) {
   return {
@@ -846,7 +909,8 @@ async function viewWeek(v) {
   }
 
   const byDay = {};
-  entries.forEach((e) => { (byDay[e.work_date] = byDay[e.work_date] || []).push(e); });
+  WEEK_ENTRIES.clear();
+  entries.forEach((e) => { (byDay[e.work_date] = byDay[e.work_date] || []).push(e); WEEK_ENTRIES.set(String(e.id), e); });
   const todayStr = todayISO();
   const weekEnd = addDays(WEEK, 6);
   const defaultDay = todayStr >= WEEK && todayStr <= weekEnd ? todayStr : WEEK;
@@ -903,12 +967,13 @@ async function viewWeek(v) {
           <div class="entry-actions">
             <button type="button" class="entry-done" onclick="toggleEntry('${e.id}', false)">Done</button>
           </div>
-          <div class="savemark" id="st-${e.id}"></div>
+          <div class="savemark" data-save-for="${e.id}" id="st-${e.id}"></div>
         </div>
       </div>`;
     }).join("");
 
-    const body = cards || `<div class="day-empty">No time logged</div>`;
+    const body = (cards || `<div class="day-empty">No time logged</div>`)
+      + (editable ? `<button type="button" class="addline" onclick="addEntry('${d}')">+ Add line</button>` : "");
     const progressText = target
       ? dayTotal >= target ? (dayTotal > target ? `${dayTotal - target} hr overtime` : "Day complete") : `${remaining} hrs remaining`
       : dayTotal ? `${dayTotal} hrs logged` : "No time logged";
@@ -1013,6 +1078,7 @@ async function viewWeek(v) {
 
 function toggleEntry(id, forceOpen) {
   id = String(id);
+  if (isDesktop() && forceOpen !== false) { closeEntryMenus(); openEntryEditor(id); return; }
   const card = document.getElementById("entry-" + id);
   const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !EXPANDED_ENTRIES.has(id);
   closeEntryMenus();
@@ -1083,6 +1149,7 @@ function toggleEntryMenu(event, id) {
 function focusEntryProject(id) {
   id = String(id);
   closeEntryMenus();
+  if (isDesktop()) { openEntryEditor(id); return; }   // the modal focuses the project field itself
   EXPANDED_ENTRIES.clear();
   EXPANDED_ENTRIES.add(id);
   const card = document.getElementById("entry-" + id);
@@ -1143,20 +1210,50 @@ function thisWeek() { WEEK = mondayOf(todayISO()); ACTIVE_DAY = todayISO(); EXPA
 let saveFade = {};
 let globalSaveFade;
 function markSaved(id, state) {
-  const el = $("st-" + id);
+  const els = [...document.querySelectorAll(`[data-save-for="${id}"]`)];
   const global = $("global-save-state");
   clearTimeout(saveFade[id]);
   clearTimeout(globalSaveFade);
   if (state === "saving") {
-    if (el) { el.textContent = "Saving…"; el.className = "savemark saving show"; }
+    els.forEach((el) => { el.textContent = "Saving…"; el.className = "savemark saving show"; });
     if (global) { global.textContent = "Saving…"; global.className = "global-save-state saving show"; }
     return;
   }
-  if (el) { el.textContent = "✓ Saved"; el.className = "savemark show"; }
+  els.forEach((el) => { el.textContent = "✓ Saved"; el.className = "savemark show"; });
   if (global) { global.textContent = "✓ Saved"; global.className = "global-save-state show"; }
-  saveFade[id] = setTimeout(() => { if (el) el.className = "savemark"; }, 1600);
+  saveFade[id] = setTimeout(() => els.forEach((el) => (el.className = "savemark")), 1600);
   globalSaveFade = setTimeout(() => { if (global) global.className = "global-save-state"; }, 1600);
 }
+
+/* On desktop the seven day columns are too narrow for an inline form, so
+   editing opens a modal. Mobile keeps the inline expand — it has the width. */
+function openEntryEditor(id) {
+  id = String(id);
+  const e = WEEK_ENTRIES.get(id);
+  if (!e) return;
+  const idx = (new Date(e.work_date + "T00:00:00").getDay() + 6) % 7;
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeEntryEditor()"><div class="modal">
+    <div class="sec-title"><h2><span class="slash">/</span> ${DAYS[idx]} · ${fmtDate(e.work_date)}</h2></div>
+    <label class="field"><div class="lbl">Project</div>
+      <input id="me_proj" value="${esc(e.project)}" placeholder="Project or site" onchange="editEntry('${e.id}','project',this.value)" /></label>
+    <label class="field"><div class="lbl">Hours</div>
+      <div class="hours-wrap"><input type="number" min="0.25" max="24" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="0.25 = 15 min" /><span class="hours-unit">hrs</span></div></label>
+    <label class="field"><div class="lbl">Notes</div>
+      <textarea placeholder="What work was completed?" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea></label>
+    <div class="savemark" data-save-for="${e.id}"></div>
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px;">
+      <button class="btn sm danger" onclick="deleteFromEditor('${e.id}')"><span>Delete line</span></button>
+      <button class="btn" onclick="closeEntryEditor()"><span>Done</span></button>
+    </div>
+  </div></div>`;
+  setTimeout(() => $("me_proj")?.focus(), 0);
+}
+async function closeEntryEditor() {
+  await Promise.allSettled([...PENDING_SAVES]);   // let the blur-triggered save land first
+  closeModal();
+  render();
+}
+async function deleteFromEditor(id) { closeModal(); await delEntry(id); }
 
 async function addEntry(dateISO) {
   try {
@@ -1178,8 +1275,13 @@ async function editEntry(id, field, value) {
     payload.hours = h;
   } else payload[field] = value;
   markSaved(id, "saving");
-  const { error } = await sb.from("time_entries").update(payload).eq("id", id);
+  const p = sb.from("time_entries").update(payload).eq("id", id);
+  PENDING_SAVES.add(p);
+  const { error } = await p;
+  PENDING_SAVES.delete(p);
   if (error) { fail(error); return render(); }
+  const cached = WEEK_ENTRIES.get(String(id));
+  if (cached) Object.assign(cached, payload);
   if (field === "hours") { await render(); markSaved(id); } // re-render updates totals, then confirm
   else markSaved(id);
 }
@@ -1265,61 +1367,68 @@ async function submitChange(sheetId, wasPaid) {
    EMPLOYEE — REQUESTS
    ============================================================ */
 let REQ_TYPE = "reimbursement";
-let RECEIPTS = [];   // staged receipt photos, held until submit
+let RECEIPTS = [];           // staged receipt photos, held in memory until submit
+let RECEIPT_WARNED = false;  // the receipt nudge shows on an attempted submit, not up front
 async function viewRequests(v) {
   const { data: mine, error } = await sb.from("requests").select("*").eq("user_id", ME.id).order("created_at", { ascending: false });
   if (error) throw error;
+
   const list = (mine || []).length ? mine.map((r) => `
-    <div class="card thin">
-      <div class="row">
+    <div class="reqrow ${r.type === "perdiem" ? "perdiem" : ""}">
+      <div class="reqrow-top">
         <div>
-          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:14px;color:var(--red);">${r.type === "perdiem" ? "Per Diem" : "Reimbursement"}</span>
-          <span class="steel" style="margin:0 10px;">·</span><span class="mono" style="font-size:14px;">${fmtDate(r.req_date)}</span>
-          <span class="steel" style="margin:0 10px;">·</span><span class="mono" style="font-weight:700;">${money(r.amount)}</span>
-        </div>${chip(r.paid ? "paid" : r.status)}
+          <div class="reqrow-kind">${r.type === "perdiem" ? "Per Diem" : "Reimbursement"}</div>
+          <div class="reqrow-meta">${fmtDate(r.req_date)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="reqrow-amt">${money(r.amount)}</div>
+          <div style="margin-top:3px;">${chip(r.paid ? "paid" : r.status)}</div>
+        </div>
       </div>
-      <div class="steel" style="font-size:14px;margin-top:6px;">${esc(r.notes)}</div>
-      ${receiptTag(r)}
+      <div class="reqrow-note">${esc(r.notes)}</div>
+      ${receiptTag(r) ? `<div class="reqrow-foot">${receiptTag(r)}</div>` : ""}
     </div>`).join("") : emptyBox("No requests yet.");
-  const ph = REQ_TYPE === "perdiem" ? "Travel days, job location…" : "What you bought, vendor, receipt info…";
+
+  const perdiem = REQ_TYPE === "perdiem";
+  const ph = perdiem ? "Travel days, job location…" : "What you bought, vendor, receipt info…";
+
   v.innerHTML = `
-    ${sec("New request")}
-    <div class="card">
-      <div class="seg">
-        <button class="${REQ_TYPE === "reimbursement" ? "on" : ""}" onclick="setReqType('reimbursement')">Reimbursement</button>
-        <button class="${REQ_TYPE === "perdiem" ? "on" : ""}" onclick="setReqType('perdiem')">Per Diem</button>
+    <div class="reqpage">
+      ${sec("New request")}
+      <div class="card">
+        <div class="seg">
+          <button class="${perdiem ? "" : "on"}" onclick="setReqType('reimbursement')">Reimbursement</button>
+          <button class="${perdiem ? "on" : ""}" onclick="setReqType('perdiem')">Per Diem</button>
+        </div>
+        <div class="grid2">
+          <label class="field"><div class="lbl">Date</div><input id="r_date" type="date" value="${todayISO()}" /></label>
+          <label class="field"><div class="lbl">Amount</div><input id="r_amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" /></label>
+        </div>
+        <label class="field"><div class="lbl">Notes</div><textarea id="r_notes" placeholder="${ph}"></textarea></label>
+        ${perdiem ? "" : `
+        <div class="field">
+          <div class="lbl">Receipt photos</div>
+          <input id="r_files" type="file" accept="image/*" multiple capture="environment" class="hidden" onchange="stageReceipts(this.files)" />
+          <button type="button" class="receipt-add" onclick="document.getElementById('r_files').click()">
+            <span class="cam">⧉</span> Add receipt photo
+          </button>
+          <div id="r_thumbs" class="receipt-thumbs"></div>
+        </div>`}
+        <div id="r_receipt_note" class="banner warn receipt-note hidden">
+          <b>Receipt required.</b> Attach a photo — or press submit again to send without one. Your admin may send it back.
+        </div>
+        <div id="r_err" class="err hidden"></div>
+        <button class="btn full" id="r_submit" onclick="submitReq()"><span>Submit request</span></button>
       </div>
-      <div class="grid2">
-        <label class="field"><div class="lbl">Date</div><input id="r_date" type="date" value="${todayISO()}" /></label>
-        <label class="field"><div class="lbl">Amount ($)</div><input id="r_amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-      </div>
-      <label class="field"><div class="lbl">Notes (required)</div><textarea id="r_notes" placeholder="${ph}"></textarea></label>
-
-      <div class="field">
-        <div class="lbl">Receipt photos</div>
-        <div class="banner warn receipt-note"><b>Receipts required.</b> Attach a photo of each receipt. You can still submit without one, but your admin may send it back.</div>
-        <input id="r_files" type="file" accept="image/*" multiple capture="environment" class="hidden" onchange="stageReceipts(this.files)" />
-        <button type="button" class="receipt-add" onclick="document.getElementById('r_files').click()">
-          <span class="cam">⧉</span> Add receipt photo
-        </button>
-        <div id="r_thumbs" class="receipt-thumbs"></div>
-      </div>
-
-      <div id="r_err" class="err hidden"></div>
-      <button class="btn" id="r_submit" onclick="submitReq()"><span>Submit request</span></button>
-    </div>
-    ${sec("My requests")}${list}`;
+      ${sec("My requests")}${list}
+    </div>`;
   renderReceiptThumbs();
 }
-function setReqType(t) { REQ_TYPE = t; render(); }
 
-/* Per diem doesn't need a receipt; reimbursement does. */
+/* Per diem has no receipt; reimbursement does. */
 function receiptTag(r) {
   const n = (r.receipt_paths || []).length;
-  if (n > 0) {
-    return `<button type="button" class="receipt-tag has" onclick="viewReceipts('${r.id}')">
-      <span class="cam">⧉</span> ${n} receipt${n > 1 ? "s" : ""} — view</button>`;
-  }
+  if (n > 0) return `<button type="button" class="receipt-tag has" onclick="viewReceipts('${r.id}')"><span class="cam">⧉</span> ${n} receipt${n > 1 ? "s" : ""} — view</button>`;
   if (r.type === "perdiem") return "";
   return `<span class="receipt-tag none"><span class="cam">!</span> No receipt attached</span>`;
 }
@@ -1336,15 +1445,20 @@ async function viewReceipts(reqId) {
   </div></div>`;
 }
 
-/* ---------- receipt staging (held in memory until submit) ---------- */
+/* ---------- receipt staging (kept in memory until submit) ---------- */
 function stageReceipts(fileList) {
-  const files = [...(fileList || [])];
-  for (const f of files) {
+  for (const f of [...(fileList || [])]) {
     if (!f.type.startsWith("image/")) { fail("Only image files can be attached."); continue; }
     if (f.size > 10 * 1024 * 1024) { fail(`${f.name} is over 10 MB — take a smaller photo.`); continue; }
     RECEIPTS.push({ id: uid(), file: f, url: URL.createObjectURL(f) });
   }
   $("r_files").value = "";
+  if (RECEIPTS.length) {
+    RECEIPT_WARNED = false;
+    $("r_receipt_note")?.classList.add("hidden");
+    const s = $("r_submit")?.querySelector("span");
+    if (s) s.textContent = "Submit request";
+  }
   renderReceiptThumbs();
 }
 function removeReceipt(id) {
@@ -1360,17 +1474,13 @@ function renderReceiptThumbs() {
       <img src="${r.url}" alt="Receipt preview" />
       <button type="button" class="rthumb-x" onclick="removeReceipt('${r.id}')" aria-label="Remove photo">×</button>
     </div>`).join("");
-  const note = document.querySelector(".receipt-note");
-  if (note) note.classList.toggle("hidden", RECEIPTS.length > 0);
 }
 async function uploadReceipts() {
   const paths = [];
   for (const r of RECEIPTS) {
     const ext = (r.file.name.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
     const path = `${ME.id}/${uid()}.${ext}`;
-    const { error } = await sb.storage.from("receipts").upload(path, r.file, {
-      contentType: r.file.type, upsert: false,
-    });
+    const { error } = await sb.storage.from("receipts").upload(path, r.file, { contentType: r.file.type, upsert: false });
     if (error) throw new Error("Receipt upload failed: " + error.message);
     paths.push(path);
   }
@@ -1380,22 +1490,33 @@ function clearReceipts() {
   RECEIPTS.forEach((r) => URL.revokeObjectURL(r.url));
   RECEIPTS = [];
 }
-/* Signed URLs so the private bucket stays private. */
+/* Signed URLs keep the private bucket private. */
 async function receiptUrls(paths) {
   if (!paths || !paths.length) return [];
   const { data, error } = await sb.storage.from("receipts").createSignedUrls(paths, 3600);
   if (error) return [];
   return (data || []).filter((d) => d.signedUrl).map((d) => d.signedUrl);
 }
+
+function setReqType(t) { REQ_TYPE = t; RECEIPT_WARNED = false; render(); }
 async function submitReq() {
   const req_date = $("r_date").value, amount = Number($("r_amount").value), notes = $("r_notes").value.trim();
-  const err = $("r_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  const err = $("r_err"), note = $("r_receipt_note");
+  const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  err.classList.add("hidden");
   if (!req_date) return bad("Pick a date.");
   if (!amount || amount <= 0) return bad("Enter a valid amount.");
   if (!notes) return bad("Notes are required — what is this for?");
 
-  // Receipts are expected, not enforced — nudge once, then let it through.
-  if (RECEIPTS.length === 0 && !confirm("No receipt photo attached.\n\nReceipts are required for reimbursement. You can submit anyway, but your admin may send it back.\n\nSubmit without a receipt?")) return;
+  // Receipts are expected, not enforced: say so once, on the attempt that lacks
+  // one, then let the next press through.
+  if (REQ_TYPE === "reimbursement" && RECEIPTS.length === 0 && !RECEIPT_WARNED) {
+    RECEIPT_WARNED = true;
+    note?.classList.remove("hidden");
+    note?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    $("r_submit").querySelector("span").textContent = "Submit without receipt";
+    return;
+  }
 
   const btn = $("r_submit");
   btn.disabled = true;
@@ -1404,6 +1525,7 @@ async function submitReq() {
     const { error } = await sb.from("requests").insert({ user_id: ME.id, type: REQ_TYPE, req_date, amount, notes, receipt_paths });
     if (error) throw error;
     clearReceipts();
+    RECEIPT_WARNED = false;
     ping((REQ_TYPE === "perdiem" ? "Per diem" : "Reimbursement") + " submitted");
     render();
   } catch (e) { btn.disabled = false; fail(e); }
@@ -1432,9 +1554,7 @@ function payStub(p, x) {
   if (p.pay_type === "hourly") {
     const reg = x.regHours ?? x.hours;
     grossRows = `<div class="stub-row"><span class="l">Regular — ${reg} hrs × ${money(rate)}/hr</span><span class="v">${money(reg * rate)}</span></div>`;
-    if (x.otHours > 0) {
-      grossRows += `<div class="stub-row"><span class="l">Overtime — ${x.otHours} hrs × ${money(rate)} × ${mult}</span><span class="v">${money(x.otHours * rate * mult)}</span></div>`;
-    }
+    if (x.otHours > 0) grossRows += `<div class="stub-row"><span class="l">Overtime — ${x.otHours} hrs × ${money(rate)} × ${mult}</span><span class="v">${money(x.otHours * rate * mult)}</span></div>`;
     grossRows += `<div class="stub-row"><span class="l">Gross pay</span><span class="v">${money(x.gross)}</span></div>`;
   } else {
     grossRows = `<div class="stub-row"><span class="l">Gross — salary × weeks approved</span><span class="v">${money(x.gross)}</span></div>`;
@@ -1912,8 +2032,7 @@ function changeTeamAccess(id) {
 
 function editPay(u) {
   const conf = otConf(u);
-  const root = $("modal-root");
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="sec-title"><h2><span class="slash">/</span> Pay &amp; withholding</h2></div>
     <p class="steel" style="font-size:14px;margin-top:-6px;">${esc(u.display_name)}</p>
 
@@ -1929,7 +2048,7 @@ function editPay(u) {
 
     <label class="field"><div class="lbl">Tax withholding (%)</div>
       <input id="e_tax" type="number" min="0" max="60" step="0.5" value="${u.tax_pct || 0}" />
-      <div class="hint">Applied to gross pay (including overtime). Reimbursements and per diem stay untaxed.</div>
+      <div class="hint">Applied to gross pay, overtime included. Reimbursements and per diem stay untaxed.</div>
     </label>
 
     <div id="ot_block">
@@ -1943,7 +2062,7 @@ function editPay(u) {
         <label class="field"><div class="lbl">OT after (hrs/week)</div><input id="e_ot_thr" type="number" min="0" max="168" step="1" value="${conf.threshold}" /></label>
         <label class="field"><div class="lbl">OT multiplier</div><input id="e_ot_mult" type="number" min="1" max="3" step="0.25" value="${conf.mult}" /></label>
       </div>
-      <div class="hint" style="margin:-6px 0 14px;">Federal standard is 1.5× past 40 hrs in a week. Calculated per week, not per day.</div>
+      <div class="hint" style="margin:-6px 0 14px;">Federal standard is 1.5× past 40 hrs in a week. Counted per week, not per day.</div>
     </div>
 
     <div id="e_err" class="err hidden"></div>
@@ -1958,7 +2077,7 @@ function togglePayFields() {
   const otOn = $("e_ot_on")?.value === "1";
   $("f_rate_wrap")?.classList.toggle("hidden", !hourly);
   $("f_sal_wrap")?.classList.toggle("hidden", hourly);
-  $("ot_block")?.classList.toggle("hidden", !hourly);          // OT is hourly-only
+  $("ot_block")?.classList.toggle("hidden", !hourly);   // OT is hourly-only
   $("ot_fields")?.classList.toggle("hidden", !otOn);
 }
 async function savePay(id) {
@@ -1972,7 +2091,6 @@ async function savePay(id) {
   if (!(tax >= 0 && tax <= 60)) return bad("Tax withholding must be between 0 and 60%.");
   if (!(thr >= 0 && thr <= 168)) return bad("OT threshold must be between 0 and 168 hrs.");
   if (!(mult >= 1 && mult <= 3)) return bad("OT multiplier must be between 1 and 3.");
-
   const payload = {
     pay_type: type,
     rate: Number($("e_rate").value || 0),
@@ -1983,7 +2101,8 @@ async function savePay(id) {
     ot_multiplier: mult,
   };
   const { error } = await sb.from("profiles").update(payload).eq("id", id);
-  if (error) return fail(error); closeModal(); ping("Pay updated"); render();
+  if (error) return fail(error);
+  closeModal(); ping("Pay updated"); render();
 }
 async function resetPin(id, name) {
   const pin = prompt(`New PIN for ${name} (4–8 digits):`);
