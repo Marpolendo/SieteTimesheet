@@ -137,6 +137,53 @@
     .linecard input, .linecard textarea, .lineread{font-size:15px;}
   }
 
+
+  /* Day chooser and focused-entry improvements */
+  .daypicker{display:flex; gap:7px; overflow-x:auto; padding:1px 1px 9px; margin:-2px 0 8px; scrollbar-width:none;}
+  .daypicker::-webkit-scrollbar{display:none;}
+  .daypick{flex:1 0 92px; border:1px solid var(--line); border-bottom:3px solid transparent; background:#fff; color:var(--steel); padding:8px 9px; text-align:left; transition:border-color .15s, background .15s, color .15s, transform .15s;}
+  .daypick:hover{border-color:#B9B6B0; color:var(--ink); transform:translateY(-1px);}
+  .daypick.on{border-color:var(--ink); border-bottom-color:var(--red); color:var(--ink); background:#fff;}
+  .daypick.todaypick{box-shadow:inset 0 0 0 1px var(--ink);}
+  .daypick.weekendpick{background:#FAF9F7;}
+  .daypick .dp-top{display:flex; justify-content:space-between; align-items:center; gap:6px; font-family:'Barlow Condensed',sans-serif; font-weight:800; letter-spacing:.06em; text-transform:uppercase;}
+  .daypick .dp-date{font-size:11px; color:var(--steel); margin-top:2px;}
+  .daypick .dp-hours{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--red);}
+  .todayflag{display:inline-block; background:var(--ink); color:#fff; padding:1px 6px; font-size:10px; letter-spacing:.08em;}
+  .daycol.active-day{box-shadow:0 5px 18px rgba(22,24,26,.12), inset 0 0 0 1px var(--ink);}
+  .daycol h4{position:sticky; top:0; z-index:2; background:inherit;}
+  .hours-wrap{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px; align-items:center;}
+  .hours-unit{font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:700; color:var(--steel); text-transform:uppercase;}
+
+  /* Compact time-entry summaries that expand only when editing */
+  .entrycard{border:1px solid var(--line); border-left:3px solid var(--red); background:#fff; box-shadow:var(--sh-card);}
+  .entrycard.open{border-color:#C7C4BE; box-shadow:var(--sh-2);}
+  .entrysummary{width:100%; border:0; background:#fff; color:var(--ink); padding:10px; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:9px; align-items:center; text-align:left;}
+  .entrysummary:hover{background:#FAF9F7;}
+  .entry-main{min-width:0;}
+  .entry-project{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .entry-note{font-size:12px; color:var(--steel); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+  .entry-note.missing{color:var(--warn); font-style:italic;}
+  .entry-hours{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--red); white-space:nowrap;}
+  .entry-chevron{font-size:18px; color:var(--steel); line-height:1; transform:rotate(0deg); transition:transform .15s;}
+  .entrycard.open .entry-chevron{transform:rotate(180deg);}
+  .entryedit{display:none; border-top:1px solid var(--line); padding:10px; background:#FCFBF9;}
+  .entrycard.open .entryedit{display:block;}
+  .entryedit .field{margin-bottom:9px;}
+  .entryedit .field:last-of-type{margin-bottom:7px;}
+  .entry-actions{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:7px;}
+  .entry-remove{border:0; background:transparent; color:var(--red); font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:5px 0;}
+  .entry-remove:hover{text-decoration:underline;}
+  .entry-done{border:1px solid var(--ink); background:var(--ink); color:#fff; padding:5px 12px; font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase;}
+  .day-empty{border:1px dashed var(--line); padding:16px 10px; text-align:center; color:var(--steel); font-size:12px;}
+  @media (max-width:820px){
+    .daypicker{margin-bottom:6px;}
+    .daypick{flex-basis:78px; padding:7px;}
+    .daypick .dp-hours{display:none;}
+    .dayrail{grid-template-columns:30px minmax(0,1fr) 30px;}
+    .dayslide{border:none; background:transparent;}
+  }
+
   .seg{display:flex; gap:8px; margin-bottom:14px;}
   .seg button{flex:1; padding:9px 0; border:2px solid var(--line); background:#fff; color:var(--steel);
     font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; letter-spacing:.08em; text-transform:uppercase;}
@@ -273,6 +320,8 @@ const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY)
 let ME = null;     // profile row
 let TAB = null;
 let WEEK = null;   // employee: current week_start (Monday, YYYY-MM-DD)
+let ACTIVE_DAY = null; // preserves the selected day while entries auto-save and re-render
+const EXPANDED_ENTRIES = new Set(); // keeps entry editors open through auto-save re-renders
 
 /* ---------- utils ---------- */
 const $ = (id) => document.getElementById(id);
@@ -510,32 +559,58 @@ async function viewWeek(v) {
     const weekend = i >= 5 ? " weekend" : "";
     const isToday = d === todayStr ? " today" : "";
 
-    const cards = list.map((e) => editable ? `
-      <div class="linecard" data-id="${e.id}">
-        <input value="${esc(e.project)}" placeholder="Project / site" onchange="editEntry('${e.id}','project',this.value)" />
-        <div class="hr">
-          <input type="number" min="0.25" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="Hours (0.25 = 15 min)" />
-          <button class="x" onclick="delEntry('${e.id}')" title="Remove line">✕</button>
-        </div>
-        <textarea placeholder="Notes (required)" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea>
-        <div class="savemark" id="st-${e.id}"></div>
-      </div>` : `
+    const cards = list.map((e) => {
+      const expanded = EXPANDED_ENTRIES.has(String(e.id));
+      const projectLabel = esc(e.project || "Untitled project / site");
+      const noteLabel = e.notes && e.notes.trim() ? esc(e.notes) : "Notes required";
+      if (!editable) return `
       <div class="linecard lineread">
-        <div class="p">${esc(e.project) || "—"} <span class="h">${e.hours}h</span></div>
+        <div class="p">${projectLabel} <span class="h">${e.hours}h</span></div>
         <div class="n">${esc(e.notes)}</div>
-      </div>`).join("");
+      </div>`;
+      return `
+      <div class="entrycard${expanded ? " open" : ""}" data-id="${e.id}" id="entry-${e.id}">
+        <button type="button" class="entrysummary" onclick="toggleEntry('${e.id}')" aria-expanded="${expanded}" aria-controls="edit-${e.id}">
+          <span class="entry-main">
+            <span class="entry-project">${projectLabel}</span>
+            <span class="entry-note${e.notes && e.notes.trim() ? "" : " missing"}">${noteLabel}</span>
+          </span>
+          <span class="entry-hours">${e.hours} hrs</span>
+          <span class="entry-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="entryedit" id="edit-${e.id}">
+          <label class="field"><div class="lbl">Project / site</div><input value="${esc(e.project)}" placeholder="Project / site" onchange="editEntry('${e.id}','project',this.value)" /></label>
+          <label class="field"><div class="lbl">Hours</div><div class="hours-wrap"><input aria-label="Hours" type="number" min="0.25" max="24" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="Hours (0.25 = 15 min)" /><span class="hours-unit">hrs</span></div></label>
+          <label class="field"><div class="lbl">Work notes</div><textarea placeholder="Describe the work completed (required)" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea></label>
+          <div class="entry-actions">
+            <button type="button" class="entry-remove" onclick="delEntry('${e.id}')" aria-label="Remove time entry">Remove entry</button>
+            <button type="button" class="entry-done" onclick="toggleEntry('${e.id}', false)">Done</button>
+          </div>
+          <div class="savemark" id="st-${e.id}"></div>
+        </div>
+      </div>`;
+    }).join("");
 
     const add = editable ? `<button class="addline" onclick="addEntry('${d}')">+ Add line</button>` : "";
-    const body = (cards || add) ? `${cards}${add}` : `<div class="steel" style="font-size:12px;text-align:center;padding:6px;">—</div>`;
+    const body = (cards || add) ? `${cards}${add}` : `<div class="day-empty">No time logged</div>`;
 
-    cols += `<div class="daycol${weekend}${isToday}" data-work-date="${d}">
+    cols += `<div class="daycol${weekend}${isToday}${ACTIVE_DAY === d ? " active-day" : ""}" data-work-date="${d}">
       <h4><span>${DAYS[i]}${isToday ? ` · Today` : ""}</span><span class="dt">${fmtDate(d)}</span>${dayTotal ? `<span class="tot">${dayTotal}h</span>` : ""}</h4>
       <div class="daybody">${body}</div>
     </div>`;
   }
-  const daysHtml = `<div class="dayrail">
+  const picker = Array.from({length:7}, (_, i) => {
+    const d = addDays(WEEK, i);
+    const dayTotal = (byDay[d] || []).reduce((a, e) => a + Number(e.hours || 0), 0);
+    const isToday = d === todayStr;
+    return `<button type="button" class="daypick${ACTIVE_DAY === d ? " on" : ""}${isToday ? " todaypick" : ""}${i >= 5 ? " weekendpick" : ""}" data-day-pick="${d}" onclick="goToDay('${d}')" aria-label="Open ${DAYS[i]} ${fmtDate(d)}">
+      <div class="dp-top"><span>${DAYS[i]}</span>${dayTotal ? `<span class="dp-hours">${dayTotal}h</span>` : ""}</div>
+      <div class="dp-date">${fmtDate(d)} ${isToday ? `<span class="todayflag">Today</span>` : ""}</div>
+    </button>`;
+  }).join("");
+  const daysHtml = `<div class="daypicker" id="daypicker">${picker}</div><div class="dayrail">
     <button class="dayslide" type="button" aria-label="Previous day" onclick="slideDays(-1)">‹</button>
-    <div class="weekgrid" id="weekgrid">${cols}</div>
+    <div class="weekgrid" id="weekgrid" aria-label="Days in selected week">${cols}</div>
     <button class="dayslide" type="button" aria-label="Next day" onclick="slideDays(1)">›</button>
   </div>`;
 
@@ -573,22 +648,61 @@ async function viewWeek(v) {
 
   requestAnimationFrame(() => {
     const grid = $("weekgrid");
-    const focusDay = grid?.querySelector(".daycol.today") || grid?.querySelector(".daycol:not(.weekend)");
-    if (grid && focusDay) grid.scrollLeft = Math.max(0, focusDay.offsetLeft - 2);
+    if (!ACTIVE_DAY || !grid?.querySelector(`[data-work-date="${ACTIVE_DAY}"]`)) {
+      ACTIVE_DAY = grid?.querySelector(".daycol.today")?.dataset.workDate || grid?.querySelector(".daycol:not(.weekend)")?.dataset.workDate || null;
+    }
+    const focusDay = ACTIVE_DAY ? grid?.querySelector(`[data-work-date="${ACTIVE_DAY}"]`) : null;
+    if (grid && focusDay) {
+      grid.scrollLeft = Math.max(0, focusDay.offsetLeft - 2);
+      syncDayUI(ACTIVE_DAY);
+      let scrollTimer;
+      grid.addEventListener("scroll", () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          const cards = [...grid.querySelectorAll(".daycol")];
+          const nearest = cards.reduce((best, card) => Math.abs(card.offsetLeft-grid.scrollLeft) < Math.abs(best.offsetLeft-grid.scrollLeft) ? card : best, cards[0]);
+          if (nearest) { ACTIVE_DAY = nearest.dataset.workDate; syncDayUI(ACTIVE_DAY); }
+        }, 70);
+      }, {passive:true});
+    }
   });
+}
+function toggleEntry(id, forceOpen) {
+  id = String(id);
+  const card = document.getElementById("entry-" + id);
+  const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !EXPANDED_ENTRIES.has(id);
+  if (shouldOpen) EXPANDED_ENTRIES.add(id); else EXPANDED_ENTRIES.delete(id);
+  if (card) {
+    card.classList.toggle("open", shouldOpen);
+    card.querySelector(".entrysummary")?.setAttribute("aria-expanded", String(shouldOpen));
+    if (shouldOpen) setTimeout(() => card.querySelector("input")?.focus(), 0);
+  }
+}
+
+function syncDayUI(dateISO) {
+  document.querySelectorAll("[data-day-pick]").forEach((b) => b.classList.toggle("on", b.dataset.dayPick === dateISO));
+  document.querySelectorAll(".daycol").forEach((c) => c.classList.toggle("active-day", c.dataset.workDate === dateISO));
+  document.querySelector(`[data-day-pick="${dateISO}"]`)?.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+}
+function goToDay(dateISO) {
+  const grid = $("weekgrid");
+  const card = grid?.querySelector(`[data-work-date="${dateISO}"]`);
+  if (!card) return;
+  ACTIVE_DAY = dateISO;
+  syncDayUI(dateISO);
+  card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
 }
 function slideDays(direction) {
   const grid = $("weekgrid");
   if (!grid) return;
   const cards = [...grid.querySelectorAll(".daycol")];
   if (!cards.length) return;
-  const current = cards.reduce((best, card, i) =>
-    Math.abs(card.offsetLeft - grid.scrollLeft) < Math.abs(cards[best].offsetLeft - grid.scrollLeft) ? i : best, 0);
+  const current = Math.max(0, cards.findIndex(c => c.dataset.workDate === ACTIVE_DAY));
   const next = Math.max(0, Math.min(cards.length - 1, current + direction));
-  cards[next].scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  goToDay(cards[next].dataset.workDate);
 }
-function shiftWeek(n) { WEEK = addDays(WEEK, n * 7); render(); }
-function thisWeek() { WEEK = mondayOf(todayISO()); render(); }
+function shiftWeek(n) { WEEK = addDays(WEEK, n * 7); ACTIVE_DAY = null; render(); }
+function thisWeek() { WEEK = mondayOf(todayISO()); ACTIVE_DAY = todayISO(); render(); }
 
 let saveFade = {};
 function markSaved(id, state) {
@@ -603,8 +717,10 @@ function markSaved(id, state) {
 async function addEntry(dateISO) {
   try {
     const sheet = await ensureSheet(WEEK);
-    const { error } = await sb.from("time_entries").insert({ timesheet_id: sheet.id, work_date: dateISO, project: "", hours: 1, notes: "" });
+    const { data, error } = await sb.from("time_entries").insert({ timesheet_id: sheet.id, work_date: dateISO, project: "", hours: 1, notes: "" }).select("id").single();
     if (error) throw error;
+    ACTIVE_DAY = dateISO;
+    if (data?.id) EXPANDED_ENTRIES.add(String(data.id));
     await render();
   } catch (e) { fail(e); }
 }
@@ -624,7 +740,7 @@ async function editEntry(id, field, value) {
 }
 async function delEntry(id) {
   const { error } = await sb.from("time_entries").delete().eq("id", id);
-  if (error) fail(error); else render();
+  if (error) fail(error); else { EXPANDED_ENTRIES.delete(String(id)); render(); }
 }
 async function submitWeek() {
   const sheet = await loadWeek(WEEK);
