@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SIETE · Crew Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>SIETE · Timesheet</title>
+<!-- SIETE favicon + installable web app -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#C4222B" />
+<meta name="application-name" content="SIETE Timesheet" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="SIETE Time" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -21,9 +33,6 @@
   input:focus,select:focus,textarea:focus{border-color:var(--ink);}
   textarea{min-height:56px; resize:vertical;}
   .hidden{display:none !important;}
-
-  .wm .a{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; letter-spacing:.02em; color:var(--red);}
-  .wm .b{font-family:'Barlow Condensed',sans-serif; font-weight:500; letter-spacing:.42em; color:#9A9DA0; text-transform:uppercase; margin-top:2px;}
 
   .btn{border:2px solid var(--red); background:var(--red); color:#fff; font-family:'Barlow Condensed',sans-serif;
     font-weight:700; font-size:16px; letter-spacing:.08em; text-transform:uppercase; padding:10px 22px;
@@ -85,23 +94,42 @@
   .tab .badge{margin-left:7px; background:var(--red); color:#fff; font-size:12px; padding:1px 7px;}
   main{max-width:1040px; margin:0 auto; padding:22px 18px 70px;}
 
-  .weeknav{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;}
-  .weeknav .wk{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-style:italic; font-size:22px; text-transform:uppercase;}
-  .weeknav .sub{font-size:13px; color:var(--steel);}
-  .navbtn{border:2px solid var(--ink); background:#fff; color:var(--ink); font-family:'Barlow Condensed',sans-serif;
-    font-weight:700; font-size:15px; letter-spacing:.06em; text-transform:uppercase; padding:6px 14px; transform:skewX(-10deg);}
-  .navbtn>span{display:inline-block; transform:skewX(10deg);}
-  .navbtn[disabled]{opacity:.4; cursor:not-allowed;}
+  .weeknav{display:flex; align-items:center; justify-content:center; margin-bottom:14px; position:relative; z-index:20;}
+  .week-selector{position:relative; width:min(100%,520px); text-align:center;}
+  .week-select-btn{display:inline-flex; align-items:center; justify-content:center; gap:9px; max-width:100%; border:0; background:transparent;
+    color:var(--ink); padding:2px 8px 4px; transition:color .15s, background .15s;}
+  .week-select-btn:hover,.week-select-btn:focus-visible{color:var(--red); background:#fff; outline:2px solid var(--line); outline-offset:2px;}
+  .week-select-btn .wk{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-style:italic; font-size:24px;
+    line-height:1.05; text-transform:uppercase;}
+  .week-chevron{display:inline-grid; place-items:center; width:25px; height:25px; border:2px solid currentColor; font-family:'Barlow',sans-serif;
+    font-size:17px; font-style:normal; font-weight:700; line-height:1; transition:transform .16s;}
+  .week-select-btn[aria-expanded="true"] .week-chevron{transform:rotate(180deg);}
+  .weeknav .sub{font-size:13px; color:var(--steel); margin-top:3px;}
+  .week-menu-backdrop{position:fixed; inset:0; z-index:89; background:rgba(22,24,26,.42); backdrop-filter:blur(2px);}
+  .week-menu{position:fixed; z-index:90; left:50%; right:auto; top:auto; bottom:0; transform:translateX(-50%);
+    width:min(520px,100%); max-height:min(72vh,520px); overflow:auto; background:#fff; border:0; border-top:4px solid var(--red);
+    border-radius:18px 18px 0 0; box-shadow:0 -10px 35px rgba(22,24,26,.22); padding:10px 12px calc(12px + env(safe-area-inset-bottom)); text-align:left;}
+  .week-menu-title{padding:8px 10px 10px; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:18px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--ink);}
+  .week-menu-item{width:100%; border:0; border-bottom:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); padding:12px 10px;
+    display:grid; grid-template-columns:24px minmax(0,1fr) auto; gap:9px; align-items:center; text-align:left;}
+  .week-menu-item:last-of-type{border-bottom:0;}
+  .week-menu-item:hover,.week-menu-item:focus-visible{background:#F7F6F3; outline:none;}
+  .week-menu-item[disabled]{opacity:.38; cursor:not-allowed; background:#fff;}
+  .week-menu-item.selected{background:#F7F6F3; box-shadow:inset 3px 0 0 var(--red);}
+  .week-menu-icon{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:18px; text-align:center;}
+  .week-menu-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px; letter-spacing:.04em; text-transform:uppercase;}
+  .week-menu-range{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--steel); white-space:nowrap;}
+  .week-menu-cancel{width:100%; margin-top:8px; min-height:44px; border:1px solid var(--line); border-radius:9px; background:#F7F6F3; color:var(--ink);
+    font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:15px; letter-spacing:.08em; text-transform:uppercase;}
+  .week-menu-cancel:hover,.week-menu-cancel:focus-visible{border-color:var(--ink); outline:none;}
 
-  .dayrail{position:relative; display:grid; grid-template-columns:42px minmax(0,1fr) 42px; gap:8px; align-items:stretch; margin-bottom:16px;}
+  .dayrail{position:relative; display:block; margin-bottom:16px;}
   .weekgrid{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(210px,1fr); gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; overscroll-behavior-x:contain; scrollbar-width:thin; padding:2px 2px 10px;}
   .weekgrid::-webkit-scrollbar{height:8px;}
   .weekgrid::-webkit-scrollbar-thumb{background:#C9C7C2;}
   .daycol{border:1px solid var(--line); border-top:3px solid var(--red); background:#fff; display:flex; flex-direction:column; min-height:120px; scroll-snap-align:start;}
   .daycol.today{min-width:clamp(320px,38vw,430px);}
-  .dayslide{border:1px solid var(--line); background:#fff; color:var(--ink); font-size:24px; font-weight:700; display:grid; place-items:center; transition:border-color .15s, color .15s, background .15s;}
-  .dayslide:hover{border-color:var(--red); color:var(--red); background:#FFF8F8;}
-  .dayslide:disabled{opacity:.35; cursor:not-allowed;}
   .daycol.weekend{border-top-color:var(--steel); background:#FAF9F7;}
   .daycol.today{border-top-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink);}
   .daycol h4{margin:0; padding:8px 9px; border-bottom:1px solid var(--line); font-family:'Barlow Condensed',sans-serif;
@@ -129,11 +157,10 @@
   .lineread .n{color:var(--steel); margin-top:2px;}
 
   @media (max-width:820px){
-    .dayrail{grid-template-columns:34px minmax(0,1fr) 34px; gap:6px;}
-    .weekgrid{grid-auto-columns:minmax(82vw,1fr); gap:10px;}
+    .dayrail{display:block;}
+    .weekgrid{grid-auto-columns:calc(100vw - 40px); gap:10px;}
     .daycol{min-height:0;}
-    .daycol.today{min-width:88vw;}
-    .dayslide{font-size:20px;}
+    .daycol.today{min-width:0;}
     .linecard input, .linecard textarea, .lineread{font-size:15px;}
   }
 
@@ -172,16 +199,15 @@
   .entryedit .field{margin-bottom:9px;}
   .entryedit .field:last-of-type{margin-bottom:7px;}
   .entry-actions{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:7px;}
-  .entry-remove{border:0; background:transparent; color:var(--red); font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:5px 0;}
-  .entry-remove:hover{text-decoration:underline;}
+  .entry-remove{border:1px solid var(--red); background:#fff; color:var(--red); font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:7px 11px; min-height:36px;}
+  .entry-remove:hover{background:#FFF4F4;}
   .entry-done{border:1px solid var(--ink); background:var(--ink); color:#fff; padding:5px 12px; font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase;}
   .day-empty{border:1px dashed var(--line); padding:16px 10px; text-align:center; color:var(--steel); font-size:12px;}
   @media (max-width:820px){
     .daypicker{margin-bottom:6px;}
     .daypick{flex-basis:78px; padding:7px;}
     .daypick .dp-hours{display:none;}
-    .dayrail{grid-template-columns:30px minmax(0,1fr) 30px;}
-    .dayslide{border:none; background:transparent;}
+    .dayrail{display:block;}
   }
 
   .seg{display:flex; gap:8px; margin-bottom:14px;}
@@ -197,6 +223,12 @@
   .v.red{color:var(--red);}
 
   .banner{padding:12px 14px; margin-bottom:14px; border:1px solid var(--line); font-size:14px;}
+  .banner.dismissible{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+  .banner-dismiss{flex:0 0 auto; border:0; background:transparent; color:var(--ink); font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:7px 4px;}
+  .banner-dismiss .xmark{color:var(--red); font-size:20px; vertical-align:-2px; margin-right:4px;}
+  .week-actions{max-width:520px; margin:0 auto 14px;}
+  .week-actions .btn{width:100%;}
+  .statbar.single{grid-template-columns:minmax(0,240px); margin-bottom:14px;}
   .banner.warn{background:#FFF6E0; border-color:#EACB7A;}
   .banner.bad{background:#FBE3E4; border-color:#E9B4B7;}
   .banner.good{background:#E6F3EA; border-color:#AFD8BB;}
@@ -261,6 +293,246 @@
   .skel-line{height:12px; margin:8px 0;}
   @media (prefers-reduced-motion:reduce){.skel{animation:none;}}
 
+
+
+  /* ---- streamlined mobile timesheet experience ---- */
+  .week-header{display:flex; align-items:flex-start; justify-content:center; gap:14px; margin-bottom:12px;}
+  .week-header .weeknav{margin:0; flex:1; max-width:560px;}
+  .week-header .week-actions{margin:0; width:auto; min-width:230px;}
+  .week-header .week-actions .btn{width:100%; min-height:44px; padding:9px 18px;}
+  .weeknav .sub strong{color:var(--ink); font-weight:700;}
+
+  .daypicker-shell{position:sticky; top:0; z-index:14; margin:0 -4px 10px; padding:7px 4px 2px; background:linear-gradient(var(--bg) 78%,rgba(244,243,240,0));}
+  .daypicker{margin:0; padding:1px 1px 8px; align-items:stretch;}
+  .daypick{flex:0 0 88px; min-height:78px; border:1px solid var(--line); border-radius:10px; padding:8px 9px; box-shadow:var(--sh-1); transition:flex-basis .18s, transform .15s, border-color .15s, box-shadow .15s;}
+  .daypick.on{flex-basis:122px; border-color:var(--ink); border-bottom-color:var(--red); box-shadow:var(--sh-2);}
+  .daypick .dp-top{font-size:14px;}
+  .daypick .dp-date{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink); margin-top:3px;}
+  .daypick .dp-status{margin-top:6px; font-size:11px; color:var(--steel); white-space:nowrap;}
+  .daypick .dp-status.complete{color:var(--ok); font-weight:700;}
+  .daypick .dp-status.partial{color:var(--ink);}
+  .daypick .dp-status.issue{color:var(--red); font-weight:700;}
+  .daypick .issue-dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:5px; vertical-align:1px;}
+  .todayflag{border-radius:999px; padding:2px 7px; text-transform:none; letter-spacing:.02em;}
+
+  .dayrail{margin-bottom:82px;}
+  .weekgrid{grid-auto-columns:minmax(280px,1fr); padding:2px 2px 16px;}
+  .daycol{border:0; border-top:3px solid var(--line); border-radius:12px; background:#fff; min-height:0; overflow:visible; box-shadow:var(--sh-card);}
+  .daycol.today{border-top-color:var(--ink); min-width:0;}
+  .daycol.active-day{min-width:clamp(390px,48vw,560px); border-top-color:var(--red); box-shadow:var(--sh-2);}
+  .daycol h4{position:static; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 12px; align-items:center; padding:14px 16px 12px; border-bottom:1px solid var(--line); border-radius:9px 9px 0 0; background:#fff;}
+  .daycol h4 .day-title{font-size:18px; letter-spacing:.04em;}
+  .daycol h4 .dt{font-size:12px; justify-self:end;}
+  .daycol h4 .day-progress{grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:3px;}
+  .daycol h4 .tot{font-size:12px; color:var(--red);}
+  .daycol h4 .remaining{font-family:'Barlow',sans-serif; font-size:12px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--steel);}
+  .daycol h4 .remaining.complete{color:var(--ok); font-weight:700;}
+  .daybody{padding:14px; gap:12px;}
+
+  .entrycard{position:relative; border:0; border-left:4px solid var(--red); border-radius:10px; box-shadow:var(--sh-card); overflow:visible;}
+  .entrycard.open{border-color:var(--red); box-shadow:var(--sh-2);}
+  .entrysummary{position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px; align-items:center; padding:0; border-radius:10px;}
+  .entry-toggle{min-width:0; width:100%; border:0; background:transparent; color:var(--ink); padding:13px 7px 13px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:10px; align-items:center; text-align:left; border-radius:10px;}
+  .entry-toggle:hover{background:#FAF9F7;}
+  .entry-main{display:block; min-width:0;}
+  .entry-project{display:block; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .entry-note{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; white-space:normal; line-height:1.3; overflow:hidden; font-size:13px; margin-top:3px;}
+  .entry-hours{font-size:13px;}
+  .entry-menu-btn{width:40px; height:42px; border:0; background:transparent; color:var(--steel); font-size:24px; line-height:1; border-radius:8px;}
+  .entry-menu-btn:hover,.entry-menu-btn:focus-visible{background:#F2F1EE; color:var(--ink); outline:none;}
+  .entry-menu{position:absolute; z-index:20; right:7px; top:49px; width:178px; padding:5px; border:1px solid var(--line); border-radius:9px; background:#fff; box-shadow:var(--sh-2);}
+  .entry-menu button{display:block; width:100%; border:0; border-radius:6px; background:#fff; color:var(--ink); padding:10px 11px; text-align:left; font-size:14px;}
+  .entry-menu button:hover{background:#F5F4F1;}
+  .entry-menu button.danger{color:var(--red);}
+  .entryedit{border-top:1px solid var(--line); padding:14px; border-radius:0 0 10px 10px; background:#FCFBF9;}
+  .entryedit .lbl{font-family:'Barlow',sans-serif; font-size:14px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink); margin-bottom:6px;}
+  .entryedit input,.entryedit textarea{border:1px solid #D4D2CD; border-radius:8px; padding:11px 12px; font-size:16px; background:#fff;}
+  .entryedit textarea{min-height:92px;}
+  .entry-actions{justify-content:flex-end; margin-top:11px;}
+  .entry-done{border-radius:7px; min-height:39px; padding:8px 17px;}
+  .entry-remove{display:none;}
+  .hours-wrap{grid-template-columns:minmax(0,180px) auto; gap:9px; justify-content:start;}
+  .hours-unit{text-transform:none; font-size:14px;}
+  .savemark{font-family:'Barlow',sans-serif; letter-spacing:0; text-transform:none; text-align:right;}
+  .day-empty{border-radius:8px;}
+
+  .floating-add{position:fixed; z-index:35; right:max(20px,calc((100vw - 1040px)/2 + 20px)); bottom:calc(22px + env(safe-area-inset-bottom)); display:inline-flex; align-items:center; gap:9px; min-height:52px; border:0; border-radius:999px; background:var(--red); color:#fff; padding:0 20px; box-shadow:0 7px 22px rgba(22,24,26,.25); font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:16px; letter-spacing:.06em; text-transform:uppercase;}
+  .floating-add:hover{filter:brightness(.9);}
+  .floating-add .fab-plus{font-family:'Barlow',sans-serif; font-size:28px; font-weight:500; line-height:1;}
+  .global-save-state{position:fixed; z-index:36; left:50%; bottom:calc(28px + env(safe-area-inset-bottom)); transform:translate(-50%,10px); border-radius:999px; background:var(--ink); color:#fff; padding:8px 14px; font-size:13px; box-shadow:var(--sh-2); opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;}
+  .global-save-state.show{opacity:1; transform:translate(-50%,0);}
+  .global-save-state.saving{background:var(--steel);}
+
+  @media (max-width:820px){
+    main{padding-top:16px;}
+    .week-header{display:block; margin-bottom:10px;}
+    .week-header .weeknav{max-width:none; margin-bottom:10px;}
+    .week-header .week-actions{width:100%; min-width:0;}
+    .week-select-btn .wk{font-size:22px;}
+    .daypicker-shell{top:0; margin-left:-18px; margin-right:-18px; padding-left:18px; padding-right:18px;}
+    .daypick{flex-basis:76px; min-height:79px;}
+    .daypick.on{flex-basis:124px;}
+    .daypick .dp-hours{display:initial;}
+    .weekgrid{grid-auto-columns:calc(100vw - 36px); gap:12px;}
+    .daycol.active-day{min-width:0;}
+    .daybody{padding:12px;}
+    .floating-add{right:18px; bottom:calc(18px + env(safe-area-inset-bottom)); width:56px; height:56px; min-height:56px; padding:0; justify-content:center;}
+    .floating-add .fab-label{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+    .global-save-state{bottom:calc(26px + env(safe-area-inset-bottom));}
+  }
+
+  @media (max-width:480px){
+    .weeknav .sub{font-size:12px;}
+    .week-select-btn .wk{font-size:20px;}
+    .week-chevron{width:23px; height:23px;}
+    .daypick.on{flex-basis:116px;}
+    .daycol h4{padding:12px 13px 10px;}
+    .daycol h4 .day-title{font-size:17px;}
+    .entry-toggle{padding-left:12px; gap:7px;}
+    .entry-hours{font-size:12px;}
+  }
+
+
+  /* ---- admin team operations dashboard ---- */
+  .team-toolbar{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
+  .team-toolbar-copy{font-size:14px; color:var(--steel);}
+  .team-toolbar .sec-title{width:100%; margin:0;}
+  .team-filters{display:flex; gap:7px; overflow-x:auto; padding:2px 1px 7px; margin-bottom:15px; scrollbar-width:none;}
+  .team-filters::-webkit-scrollbar{display:none;}
+  .team-filter{flex:0 0 auto; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--steel); padding:8px 13px; font-family:'Barlow',sans-serif; font-weight:600; font-size:13px; box-shadow:var(--sh-1);}
+  .team-filter:hover{border-color:var(--ink); color:var(--ink);}
+  .team-filter.on{border-color:var(--ink); background:var(--ink); color:#fff;}
+  .team-filter-count{display:inline-flex; align-items:center; justify-content:center; min-width:21px; height:21px; margin-left:6px; padding:0 6px; border-radius:999px; background:#F0EFEC; color:var(--steel); font-family:'JetBrains Mono',monospace; font-size:10px;}
+  .team-filter.on .team-filter-count{background:rgba(255,255,255,.17); color:#fff;}
+
+  .team-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:22px;}
+  .team-card{background:#fff; border:1px solid var(--line); border-top:3px solid var(--ink); border-radius:11px; padding:17px; box-shadow:var(--sh-card); min-width:0;}
+  .team-card.submitted{border-top-color:var(--warn);}
+  .team-card.declined{border-top-color:var(--red);}
+  .team-card.approved,.team-card.paid{border-top-color:var(--ok);}
+  .team-card.inactive{opacity:.62;}
+  .team-card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .team-person{display:flex; align-items:center; gap:11px; min-width:0;}
+  .team-avatar{flex:0 0 42px; width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:#F0EFEC; color:var(--ink); font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; letter-spacing:.04em;}
+  .team-name{font-weight:700; font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .team-meta{font-size:12px; color:var(--steel); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .team-status{flex:0 0 auto; display:inline-flex; align-items:center; min-height:27px; border-radius:999px; padding:5px 9px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:11px; letter-spacing:.07em; text-transform:uppercase; background:#EEF0F1; color:var(--steel);}
+  .team-status.submitted{background:#FFF4DB; color:var(--warn);}
+  .team-status.declined{background:#FBE3E4; color:var(--red);}
+  .team-status.approved{background:#E2F2E6; color:var(--ok);}
+  .team-status.paid{background:#E8F1EA; color:var(--ok);}
+  .team-hours{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-top:18px;}
+  .team-hours-label{font-size:13px; color:var(--steel);}
+  .team-hours-value{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:29px; line-height:1; color:var(--ink); white-space:nowrap;}
+  .team-hours-value span{font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; color:var(--steel);}
+  .team-hours-value.complete{color:var(--ok);}
+  .team-hours-value.overtime{color:var(--warn);}
+  .team-hours-note{text-align:right; font-size:12px; color:var(--steel); margin-top:5px;}
+  .team-hours-note.complete{color:var(--ok); font-weight:600;}
+  .team-hours-note.overtime{color:var(--warn); font-weight:600;}
+  .team-progress{height:6px; margin-top:10px; overflow:hidden; border-radius:999px; background:#EEECE8;}
+  .team-progress span{display:block; height:100%; width:var(--progress,0%); max-width:100%; border-radius:inherit; background:var(--ink);}
+  .team-progress.complete span{background:var(--ok);}
+  .team-progress.overtime span{background:var(--warn);}
+  .team-card-actions{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .team-card-actions .primary{flex:1 1 170px; min-height:40px;}
+  .team-card-actions .edit-member{flex:0 0 auto; min-height:40px;}
+
+  .team-edit-modal{max-width:470px; border-radius:12px; padding:0; overflow:hidden;}
+  .team-edit-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:18px 20px 15px; border-bottom:1px solid var(--line);}
+  .team-edit-name{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; font-size:25px; line-height:1.05; text-transform:uppercase;}
+  .team-edit-sub{font-size:13px; color:var(--steel); margin-top:4px;}
+  .team-edit-list{display:grid; gap:9px; padding:16px 20px 20px;}
+  .team-edit-action{width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); padding:13px 14px; text-align:left;}
+  .team-edit-action:hover{border-color:var(--ink); box-shadow:var(--sh-1);}
+  .team-edit-action strong{display:block; font-size:15px;}
+  .team-edit-action small{display:block; color:var(--steel); font-size:12px; margin-top:2px;}
+  .team-edit-action .arrow{font-size:20px; color:var(--steel);}
+  .team-edit-action.danger{border-color:#F0C6C8; color:var(--red);}
+  .team-edit-action.danger small,.team-edit-action.danger .arrow{color:var(--red);}
+  .profile-readonly{background:#F5F4F1; color:var(--steel);}
+
+  details.team-add-panel{background:#fff; border:1px solid var(--line); border-top:3px solid var(--ink); border-radius:10px; box-shadow:var(--sh-card); margin-bottom:18px;}
+  details.team-add-panel summary{cursor:pointer; list-style:none; padding:15px 17px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; font-size:20px; letter-spacing:.02em; text-transform:uppercase;}
+  details.team-add-panel summary::-webkit-details-marker{display:none;}
+  details.team-add-panel summary::after{content:'+'; float:right; color:var(--red); font-style:normal;}
+  details.team-add-panel[open] summary::after{content:'−';}
+  .team-add-body{padding:3px 17px 18px; border-top:1px solid var(--line);}
+
+  .team-timesheet-modal{max-width:780px; max-height:min(88vh,900px); overflow:auto; border-radius:12px; padding:0; border-top:4px solid var(--red);}
+  .review-modal-head{position:sticky; top:0; z-index:3; display:flex; align-items:flex-start; justify-content:space-between; gap:15px; padding:18px 20px 15px; background:#fff; border-bottom:1px solid var(--line);}
+  .review-modal-title{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800; font-size:25px; text-transform:uppercase;}
+  .review-modal-sub{font-size:13px; color:var(--steel); margin-top:3px;}
+  .modal-close{flex:0 0 40px; width:40px; height:40px; border:0; border-radius:50%; background:#F2F1EE; color:var(--ink); font-size:24px; line-height:1;}
+  .review-modal-body{padding:18px 20px 22px;}
+  .review-week-row{display:grid; grid-template-columns:minmax(210px,1fr) auto auto; align-items:end; gap:12px; margin-bottom:16px;}
+  .review-week-row .field{margin:0;}
+  .review-total{text-align:right;}
+  .review-total .k{font-size:11px; color:var(--steel); text-transform:uppercase; letter-spacing:.08em;}
+  .review-total .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:24px; margin-top:3px;}
+  .review-days{display:grid; gap:9px;}
+  .review-day{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
+  .review-day-head{display:flex; justify-content:space-between; gap:12px; padding:10px 12px; background:#F8F7F4; border-bottom:1px solid var(--line);}
+  .review-day-title{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
+  .review-day-total{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:var(--red);}
+  .review-line{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; padding:10px 12px; border-bottom:1px solid var(--line);}
+  .review-line:last-child{border-bottom:0;}
+  .review-project{font-weight:700; font-size:14px;}
+  .review-notes{font-size:13px; color:var(--steel); margin-top:2px; line-height:1.35;}
+  .review-line-hours{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ink); white-space:nowrap;}
+  .review-empty{padding:11px 12px; color:var(--steel); font-size:13px;}
+  .review-actions{position:sticky; bottom:0; display:flex; gap:9px; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.96); border-top:1px solid var(--line); backdrop-filter:blur(10px);}
+
+  @media (max-width:820px){
+    .team-grid{grid-template-columns:1fr;}
+    .team-card{padding:15px;}
+    .review-week-row{grid-template-columns:1fr 1fr;}
+    .review-week-row .field{grid-column:1 / -1;}
+    .team-timesheet-modal{max-height:94vh; border-radius:12px 12px 0 0; align-self:flex-end;}
+    .modal-bg:has(.team-timesheet-modal){align-items:flex-end; padding:0;}
+  }
+  @media (max-width:520px){
+    .team-card-head{display:block;}
+    .team-status{margin-top:10px;}
+    .team-card-actions{align-items:stretch;}
+    .team-card-actions .primary{flex:1 1 auto;}
+    .team-card-actions .edit-member{flex:0 0 auto;}
+    .team-edit-modal{width:100%; max-width:none; border-radius:12px 12px 0 0; align-self:flex-end;}
+    .modal-bg:has(.team-edit-modal){align-items:flex-end; padding:0;}
+    .review-modal-head{padding:15px 16px 13px;}
+    .review-modal-body{padding:14px 16px 18px;}
+    .review-week-row{grid-template-columns:1fr;}
+    .review-total{text-align:left;}
+    .review-actions{padding-left:16px; padding-right:16px;}
+    .review-actions .btn{flex:1; padding-left:10px; padding-right:10px;}
+  }
+
+
+  /* ---- receipt photos ---- */
+  .receipt-note{margin:0 0 9px; font-size:13px;}
+  .receipt-add{width:100%; border:1px dashed var(--line); border-radius:9px; background:#fff; color:var(--steel);
+    padding:12px; min-height:46px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px;
+    letter-spacing:.06em; text-transform:uppercase; transition:border-color .15s, color .15s;}
+  .receipt-add:hover{border-color:var(--red); color:var(--red);}
+  .receipt-add .cam{font-size:17px; margin-right:6px;}
+  .receipt-thumbs{display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;}
+  .receipt-thumbs:empty{margin-top:0;}
+  .rthumb{position:relative; width:78px; height:78px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#FAF9F7;}
+  .rthumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .rthumb-x{position:absolute; top:2px; right:2px; width:22px; height:22px; border:0; border-radius:50%;
+    background:rgba(22,24,26,.72); color:#fff; font-size:15px; line-height:1; display:grid; place-items:center;}
+  .rthumb-x:hover{background:var(--red);}
+  .receipt-tag{display:inline-flex; align-items:center; gap:6px; margin-top:8px; border-radius:7px;
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:.06em;
+    text-transform:uppercase; padding:4px 10px;}
+  .receipt-tag.has{border:1px solid var(--line); background:#fff; color:var(--ink);}
+  .receipt-tag.has:hover{border-color:var(--red); color:var(--red);}
+  .receipt-tag.none{background:#FFF0D6; color:var(--warn);}
+  .receipt-tag .cam{font-size:14px;}
+  .receipt-modal{max-width:560px;}
+  .receipt-full{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px;
+    max-height:56vh; overflow:auto;}
+  .receipt-full img{width:100%; border:1px solid var(--line); border-radius:8px; display:block;}
 </style>
 </head>
 <body>
@@ -272,8 +544,7 @@
   <div style="max-width:380px; margin:0 auto; padding:70px 20px;">
     <div style="margin-bottom:34px;">
       <div class="logo login"></div>
-      <div style="margin-top:14px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:19px; letter-spacing:.16em; color:#fff;">CREW LEDGER</div>
-      <div style="color:#9A9DA0; font-size:14px; margin-top:6px;">Time, requests, and payroll — one book.</div>
+      <div style="margin-top:14px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:23px; letter-spacing:.16em; color:#fff;">TIMESHEET</div>
     </div>
     <div style="background:#fff; padding:22px; border-top:4px solid var(--red);">
       <label class="field"><div class="lbl">Account</div><select id="loginUser"></select></label>
@@ -281,7 +552,7 @@
         <input id="loginPin" type="password" inputmode="numeric" placeholder="••••••" />
       </label>
       <div id="loginErr" class="err hidden"></div>
-      <button class="btn full" id="loginBtn"><span>Clock in</span></button>
+      <button class="btn full" id="loginBtn"><span>Log in</span></button>
     </div>
   </div>
 </div>
@@ -322,12 +593,14 @@ let TAB = null;
 let WEEK = null;   // employee: current week_start (Monday, YYYY-MM-DD)
 let ACTIVE_DAY = null; // preserves the selected day while entries auto-save and re-render
 const EXPANDED_ENTRIES = new Set(); // keeps entry editors open through auto-save re-renders
+let AUTO_EXPANDED_WEEK = null; // opens the first entry on the active day once per week
 
 /* ---------- utils ---------- */
 const $ = (id) => document.getElementById(id);
 const money = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 function mondayOf(d) {
   const t = new Date(d + "T00:00:00");
@@ -338,6 +611,7 @@ function mondayOf(d) {
 function addDays(iso, n) { const t = new Date(iso + "T00:00:00"); t.setDate(t.getDate() + n); return t.toISOString().slice(0, 10); }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function fmtDate(iso) { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${m}/${d}/${y.slice(2)}`; }
+function fmtMonthDay(iso) { if (!iso) return "—"; const [, m, d] = iso.split("-"); return `${Number(m)}/${Number(d)}`; }
 function weekLabel(ws) { return `Week of ${fmtDate(ws)}`; }
 function weekRange(ws) { return `${fmtDate(ws)} – ${fmtDate(addDays(ws, 6))}`; }
 
@@ -350,14 +624,34 @@ function ping(msg, bad) {
 function fail(e) { ping(typeof e === "string" ? e : (e?.message || "Something went wrong"), true); }
 
 /* ---------- payroll math (weekly) ---------- */
+/* Overtime is figured per WEEK (the unit of approval), not on the pooled
+   total — 45 hrs one week + 35 the next is 5 hrs OT, not zero. Hourly only. */
+function otConf(p) {
+  return {
+    on: p.ot_enabled !== false,
+    threshold: Number(p.ot_threshold ?? 40),
+    mult: Number(p.ot_multiplier ?? 1.5),
+  };
+}
 function computePay(profile, sheets, reqs) {
-  const hours = sheets.reduce((s, ts) => s + (ts.time_entries || []).reduce((a, e) => a + Number(e.hours || 0), 0), 0);
-  const gross = profile.pay_type === "hourly"
-    ? hours * Number(profile.rate || 0)
-    : sheets.length * Number(profile.salary_per_period || 0);
+  const rate = Number(profile.rate || 0);
+  const { on, threshold, mult } = otConf(profile);
+  let hours = 0, otHours = 0, gross = 0;
+
+  sheets.forEach((ts) => {
+    const wk = (ts.time_entries || []).reduce((a, e) => a + Number(e.hours || 0), 0);
+    hours += wk;
+    if (profile.pay_type === "hourly") {
+      const ot = on ? Math.max(0, wk - threshold) : 0;
+      otHours += ot;
+      gross += (wk - ot) * rate + ot * rate * mult;
+    }
+  });
+  if (profile.pay_type !== "hourly") gross = sheets.length * Number(profile.salary_per_period || 0);
+
   const tax = gross * (Number(profile.tax_pct || 0) / 100);
   const reimb = reqs.reduce((s, r) => s + Number(r.amount || 0), 0);
-  return { hours, gross, tax, reimb, net: gross - tax + reimb };
+  return { hours, otHours, regHours: hours - otHours, gross, tax, reimb, net: gross - tax + reimb };
 }
 
 /* ============================================================
@@ -382,7 +676,7 @@ async function showLogin() {
   const { data, error } = await sb.rpc("list_usernames");
   if (error) { sel.innerHTML = '<option>Could not load accounts</option>'; return; }
   sel.innerHTML = (data || []).map((u) =>
-    `<option value="${esc(u.username)}">${esc(u.display_name)} — ${u.role === "admin" ? "Admin" : "Crew"}</option>`).join("");
+    `<option value="${esc(u.username)}">${esc(firstName(u.display_name))}</option>`).join("");
 }
 
 async function doLogin() {
@@ -402,8 +696,8 @@ async function doLogin() {
 
 async function afterLogin() {
   const { data: sess } = await sb.auth.getSession();
-  const uid = sess.session.user.id;
-  const { data: prof, error } = await sb.from("profiles").select("*").eq("id", uid).single();
+  const myId = sess.session.user.id;
+  const { data: prof, error } = await sb.from("profiles").select("*").eq("id", myId).single();
   if (error || !prof) { await sb.auth.signOut(); return showLogin(); }
   ME = prof;
   TAB = ME.role === "admin" ? "approvals" : "week";
@@ -541,49 +835,72 @@ async function viewWeek(v) {
   const totalHrs = entries.reduce((a, e) => a + Number(e.hours || 0), 0);
 
   let banner = "";
-  if (status === "declined") banner = `<div class="banner bad"><b>Sent back.</b> ${esc(sheet.decline_reason || "Please review and resubmit.")}</div>`;
-  else if (status === "submitted") banner = `<div class="banner warn"><b>Submitted.</b> Waiting on admin approval — no edits until it's reviewed.</div>`;
-  else if (status === "approved" && openCR) banner = `<div class="banner warn"><b>Change requested.</b> Your amendment is waiting on admin. The week stays locked until then.</div>`;
-  else if (status === "approved") banner = `<div class="banner good"><b>Approved${sheet.paid ? " · paid" : ""}.</b> Locked. Use “Request change” if something needs fixing.</div>`;
+  const bannerKey = sheet ? `week-banner-${sheet.id}-${status}-${sheet.updated_at || ""}` : "";
+  const bannerDismissed = bannerKey && sessionStorage.getItem(bannerKey) === "1";
+  const dismissButton = bannerKey ? `<button type="button" class="banner-dismiss" onclick="dismissWeekBanner('${bannerKey}', this)" aria-label="Dismiss message"><span class="xmark">×</span>Dismiss</button>` : "";
+  if (!bannerDismissed) {
+    if (status === "declined") banner = `<div class="banner bad dismissible"><div><b>Sent back.</b> ${esc(sheet.decline_reason || "Please review and resubmit.")}</div>${dismissButton}</div>`;
+    else if (status === "submitted") banner = `<div class="banner warn dismissible"><div><b>Submitted.</b> Waiting on admin approval — no edits until it's reviewed.</div>${dismissButton}</div>`;
+    else if (status === "approved" && openCR) banner = `<div class="banner warn dismissible"><div><b>Change requested.</b> Your amendment is waiting on admin. The week stays locked until then.</div>${dismissButton}</div>`;
+    else if (status === "approved") banner = `<div class="banner good dismissible"><div><b>Approved${sheet.paid ? " · paid" : ""}.</b> Locked. Use “Request change” if something needs fixing.</div>${dismissButton}</div>`;
+  }
 
-  // group entries by day
   const byDay = {};
   entries.forEach((e) => { (byDay[e.work_date] = byDay[e.work_date] || []).push(e); });
   const todayStr = todayISO();
+  const weekEnd = addDays(WEEK, 6);
+  const defaultDay = todayStr >= WEEK && todayStr <= weekEnd ? todayStr : WEEK;
+  if (!ACTIVE_DAY || ACTIVE_DAY < WEEK || ACTIVE_DAY > weekEnd) ACTIVE_DAY = defaultDay;
+
+  // On first visit to a week, open the first line for the selected day and keep all others collapsed.
+  if (editable && AUTO_EXPANDED_WEEK !== WEEK && EXPANDED_ENTRIES.size === 0) {
+    const first = (byDay[ACTIVE_DAY] || [])[0];
+    if (first) EXPANDED_ENTRIES.add(String(first.id));
+    AUTO_EXPANDED_WEEK = WEEK;
+  }
 
   let cols = "";
   for (let i = 0; i < 7; i++) {
     const d = addDays(WEEK, i);
     const list = (byDay[d] || []).sort((a, b) => a.created_at < b.created_at ? -1 : 1);
     const dayTotal = list.reduce((a, e) => a + Number(e.hours || 0), 0);
+    const target = i < 5 ? 8 : 0;
+    const remaining = target ? Math.max(0, target - dayTotal) : 0;
     const weekend = i >= 5 ? " weekend" : "";
     const isToday = d === todayStr ? " today" : "";
 
     const cards = list.map((e) => {
       const expanded = EXPANDED_ENTRIES.has(String(e.id));
-      const projectLabel = esc(e.project || "Untitled project / site");
+      const projectLabel = esc(e.project || "Untitled project");
       const noteLabel = e.notes && e.notes.trim() ? esc(e.notes) : "Notes required";
       if (!editable) return `
       <div class="linecard lineread">
-        <div class="p">${projectLabel} <span class="h">${e.hours}h</span></div>
+        <div class="p">${projectLabel} <span class="h">${e.hours} hrs</span></div>
         <div class="n">${esc(e.notes)}</div>
       </div>`;
       return `
       <div class="entrycard${expanded ? " open" : ""}" data-id="${e.id}" id="entry-${e.id}">
-        <button type="button" class="entrysummary" onclick="toggleEntry('${e.id}')" aria-expanded="${expanded}" aria-controls="edit-${e.id}">
-          <span class="entry-main">
-            <span class="entry-project">${projectLabel}</span>
-            <span class="entry-note${e.notes && e.notes.trim() ? "" : " missing"}">${noteLabel}</span>
-          </span>
-          <span class="entry-hours">${e.hours} hrs</span>
-          <span class="entry-chevron" aria-hidden="true">⌄</span>
-        </button>
+        <div class="entrysummary">
+          <button type="button" class="entry-toggle" onclick="toggleEntry('${e.id}')" aria-expanded="${expanded}" aria-controls="edit-${e.id}">
+            <span class="entry-main">
+              <span class="entry-project">${projectLabel}</span>
+              <span class="entry-note${e.notes && e.notes.trim() ? "" : " missing"}">${noteLabel}</span>
+            </span>
+            <span class="entry-hours">${e.hours} hrs</span>
+            <span class="entry-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <button type="button" class="entry-menu-btn" onclick="toggleEntryMenu(event,'${e.id}')" aria-haspopup="menu" aria-expanded="false" aria-controls="entry-menu-${e.id}" aria-label="Entry options">⋮</button>
+          <div class="entry-menu hidden" id="entry-menu-${e.id}" role="menu">
+            <button type="button" role="menuitem" onclick="focusEntryProject('${e.id}')">Rename project</button>
+            <button type="button" role="menuitem" onclick="duplicateEntry('${e.id}')">Duplicate</button>
+            <button type="button" role="menuitem" class="danger" onclick="delEntry('${e.id}')">Delete</button>
+          </div>
+        </div>
         <div class="entryedit" id="edit-${e.id}">
-          <label class="field"><div class="lbl">Project / site</div><input value="${esc(e.project)}" placeholder="Project / site" onchange="editEntry('${e.id}','project',this.value)" /></label>
+          <label class="field"><div class="lbl">Project</div><input value="${esc(e.project)}" placeholder="Project or site" onchange="editEntry('${e.id}','project',this.value)" /></label>
           <label class="field"><div class="lbl">Hours</div><div class="hours-wrap"><input aria-label="Hours" type="number" min="0.25" max="24" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="Hours (0.25 = 15 min)" /><span class="hours-unit">hrs</span></div></label>
-          <label class="field"><div class="lbl">Work notes</div><textarea placeholder="Describe the work completed (required)" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea></label>
+          <label class="field"><div class="lbl">Notes</div><textarea placeholder="What work was completed?" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea></label>
           <div class="entry-actions">
-            <button type="button" class="entry-remove" onclick="delEntry('${e.id}')" aria-label="Remove time entry">Remove entry</button>
             <button type="button" class="entry-done" onclick="toggleEntry('${e.id}', false)">Done</button>
           </div>
           <div class="savemark" id="st-${e.id}"></div>
@@ -591,66 +908,92 @@ async function viewWeek(v) {
       </div>`;
     }).join("");
 
-    const add = editable ? `<button class="addline" onclick="addEntry('${d}')">+ Add line</button>` : "";
-    const body = (cards || add) ? `${cards}${add}` : `<div class="day-empty">No time logged</div>`;
+    const body = cards || `<div class="day-empty">No time logged</div>`;
+    const progressText = target
+      ? dayTotal >= target ? (dayTotal > target ? `${dayTotal - target} hr overtime` : "Day complete") : `${remaining} hrs remaining`
+      : dayTotal ? `${dayTotal} hrs logged` : "No time logged";
 
     cols += `<div class="daycol${weekend}${isToday}${ACTIVE_DAY === d ? " active-day" : ""}" data-work-date="${d}">
-      <h4><span>${DAYS[i]}${isToday ? ` · Today` : ""}</span><span class="dt">${fmtDate(d)}</span>${dayTotal ? `<span class="tot">${dayTotal}h</span>` : ""}</h4>
+      <h4>
+        <span class="day-title">${DAYS[i]}${isToday ? ` · Today` : ""}</span>
+        <span class="dt">${fmtDate(d)}</span>
+        <span class="day-progress"><span class="tot">${target ? `${dayTotal} / ${target} hrs` : `${dayTotal} hrs`}</span><span class="remaining${target && dayTotal >= target ? " complete" : ""}">${progressText}</span></span>
+      </h4>
       <div class="daybody">${body}</div>
     </div>`;
   }
+
   const picker = Array.from({length:7}, (_, i) => {
     const d = addDays(WEEK, i);
-    const dayTotal = (byDay[d] || []).reduce((a, e) => a + Number(e.hours || 0), 0);
+    const list = byDay[d] || [];
+    const dayTotal = list.reduce((a, e) => a + Number(e.hours || 0), 0);
+    const target = i < 5 ? 8 : 0;
     const isToday = d === todayStr;
-    return `<button type="button" class="daypick${ACTIVE_DAY === d ? " on" : ""}${isToday ? " todaypick" : ""}${i >= 5 ? " weekendpick" : ""}" data-day-pick="${d}" onclick="goToDay('${d}')" aria-label="Open ${DAYS[i]} ${fmtDate(d)}">
-      <div class="dp-top"><span>${DAYS[i]}</span>${dayTotal ? `<span class="dp-hours">${dayTotal}h</span>` : ""}</div>
-      <div class="dp-date">${fmtDate(d)} ${isToday ? `<span class="todayflag">Today</span>` : ""}</div>
+    const hasIssue = list.some((e) => !e.project?.trim() || !e.notes?.trim() || !(Number(e.hours) > 0));
+    let statusText = "0 hrs";
+    let statusClass = "";
+    if (hasIssue) { statusText = "Incomplete"; statusClass = "issue"; }
+    else if (target && dayTotal >= target) { statusText = `${dayTotal} hrs ✓`; statusClass = "complete"; }
+    else if (dayTotal > 0) { statusText = `${dayTotal} hrs`; statusClass = "partial"; }
+    return `<button type="button" class="daypick${ACTIVE_DAY === d ? " on" : ""}${isToday ? " todaypick" : ""}${i >= 5 ? " weekendpick" : ""}" data-day-pick="${d}" onclick="goToDay('${d}')" aria-label="Open ${DAYS[i]} ${fmtDate(d)}, ${statusText}">
+      <div class="dp-top"><span>${DAYS[i]}</span>${isToday ? `<span class="todayflag">Today</span>` : ""}</div>
+      <div class="dp-date">${fmtMonthDay(d)}</div>
+      <div class="dp-status ${statusClass}">${hasIssue ? `<span class="issue-dot"></span>` : ""}${statusText}</div>
     </button>`;
   }).join("");
-  const daysHtml = `<div class="daypicker" id="daypicker">${picker}</div><div class="dayrail">
-    <button class="dayslide" type="button" aria-label="Previous day" onclick="slideDays(-1)">‹</button>
+  const daysHtml = `<div class="daypicker-shell"><div class="daypicker" id="daypicker">${picker}</div></div><div class="dayrail">
     <div class="weekgrid" id="weekgrid" aria-label="Days in selected week">${cols}</div>
-    <button class="dayslide" type="button" aria-label="Next day" onclick="slideDays(1)">›</button>
   </div>`;
 
   let actions = "";
-  if (editable) actions = `<button class="btn" onclick="submitWeek()" ${totalHrs === 0 ? "disabled" : ""}><span>Submit week for approval</span></button>`;
+  if (editable) actions = `<button class="btn" onclick="confirmSubmitWeek()" ${totalHrs === 0 ? "disabled" : ""}><span>Submit week</span></button>`;
   else if (status === "approved" && !openCR) actions = `<button class="btn ghost" onclick="openChange('${sheet.id}', ${sheet.paid})"><span>Request change</span></button>`;
 
-  const savedNote = editable ? `<div class="steel" style="font-size:13px;text-align:center;margin-bottom:12px;">Lines save automatically. When the week is ready, submit it for approval.</div>` : "";
-
-  const daysLogged = Object.keys(byDay).filter((d) => (byDay[d] || []).length).length;
-  const ot = totalHrs > 40;
-  const statusLabel = sheet ? (sheet.paid ? "Paid" : ({ draft: "Draft", submitted: "Submitted", approved: "Approved", declined: "Sent back" }[status])) : "Not started";
-  const statusAccent = status === "approved" ? "ok" : (status === "declined" ? "red" : (status === "submitted" ? "warn" : ""));
-  const statbar = statCards([
-    { k: "Hours this week", v: totalHrs + (ot ? ` <span class="ot"><span>OT</span></span>` : ""), accent: ot ? "warn" : "red", sub: ot ? "Over 40 — overtime" : "of 40 hr week" },
-    { k: "Days logged", v: `${daysLogged}<span style="font-size:15px;color:var(--steel)"> / 7</span>`, small: false },
-    { k: "Status", v: statusLabel, small: true, accent: statusAccent },
-  ]);
+  const currentWeekStart = mondayOf(todayISO());
+  const previousWeek = addDays(WEEK, -7);
+  const nextWeek = addDays(WEEK, 7);
+  const selectedStatus = isThisWeek ? " selected" : "";
 
   v.innerHTML = `
-    <div class="weeknav">
-      <button class="navbtn" onclick="shiftWeek(-1)"><span>← Prev</span></button>
-      <div style="text-align:center;">
-        <div class="wk">${weekLabel(WEEK)}</div>
-        <div class="sub">${weekRange(WEEK)} · ${totalHrs} hrs ${chip(sheet ? (sheet.paid ? "paid" : status) : "draft")}</div>
+    <div class="week-header">
+      <div class="weeknav">
+        <div class="week-selector">
+          <button type="button" class="week-select-btn" id="week-menu-button" onclick="toggleWeekMenu(event)" aria-expanded="false" aria-controls="week-menu" aria-haspopup="menu">
+            <span class="wk">${weekLabel(WEEK)}</span>
+            <span class="week-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="sub">${weekRange(WEEK)} · <strong>${totalHrs} hrs</strong> ${chip(sheet ? (sheet.paid ? "paid" : status) : "draft")}</div>
+          <div class="week-menu-backdrop hidden" id="week-menu-backdrop" onclick="closeWeekMenu()" aria-hidden="true"></div>
+          <div class="week-menu hidden" id="week-menu" role="menu" aria-label="Choose a work week">
+            <div class="week-menu-title">Select week</div>
+            <button type="button" class="week-menu-item" role="menuitem" onclick="chooseWeek(-1)">
+              <span class="week-menu-icon" aria-hidden="true">←</span>
+              <span class="week-menu-label">Previous week</span>
+              <span class="week-menu-range">${weekRange(previousWeek)}</span>
+            </button>
+            <button type="button" class="week-menu-item${selectedStatus}" role="menuitem" onclick="chooseThisWeek()" ${isThisWeek ? 'disabled aria-current="true"' : ""}>
+              <span class="week-menu-icon" aria-hidden="true">${isThisWeek ? "✓" : "●"}</span>
+              <span class="week-menu-label">This week</span>
+              <span class="week-menu-range">${weekRange(currentWeekStart)}</span>
+            </button>
+            <button type="button" class="week-menu-item" role="menuitem" onclick="chooseWeek(1)" ${isThisWeek ? "disabled" : ""}>
+              <span class="week-menu-icon" aria-hidden="true">→</span>
+              <span class="week-menu-label">Next week</span>
+              <span class="week-menu-range">${weekRange(nextWeek)}</span>
+            </button>
+            <button type="button" class="week-menu-cancel" onclick="closeWeekMenu()">Cancel</button>
+          </div>
+        </div>
       </div>
-      <button class="navbtn" onclick="shiftWeek(1)" ${isThisWeek ? "disabled" : ""}><span>Next →</span></button>
+      ${actions ? `<div class="week-actions">${actions}</div>` : ""}
     </div>
-    ${!isThisWeek ? `<div style="text-align:center;margin-bottom:12px;"><button class="navbtn" onclick="thisWeek()"><span>Jump to this week</span></button></div>` : ""}
-    ${statbar}
     ${banner}
     ${daysHtml}
-    ${savedNote}
-    <div style="margin-top:4px;">${actions}</div>`;
+    ${editable ? `<button type="button" class="floating-add" onclick="addEntry(ACTIVE_DAY || '${defaultDay}')" aria-label="Add time entry to selected day"><span class="fab-plus">+</span><span class="fab-label">Add line</span></button>` : ""}
+    <div id="global-save-state" class="global-save-state" aria-live="polite"></div>`;
 
   requestAnimationFrame(() => {
     const grid = $("weekgrid");
-    if (!ACTIVE_DAY || !grid?.querySelector(`[data-work-date="${ACTIVE_DAY}"]`)) {
-      ACTIVE_DAY = grid?.querySelector(".daycol.today")?.dataset.workDate || grid?.querySelector(".daycol:not(.weekend)")?.dataset.workDate || null;
-    }
     const focusDay = ACTIVE_DAY ? grid?.querySelector(`[data-work-date="${ACTIVE_DAY}"]`) : null;
     if (grid && focusDay) {
       grid.scrollLeft = Math.max(0, focusDay.offsetLeft - 2);
@@ -667,16 +1010,31 @@ async function viewWeek(v) {
     }
   });
 }
+
 function toggleEntry(id, forceOpen) {
   id = String(id);
   const card = document.getElementById("entry-" + id);
   const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !EXPANDED_ENTRIES.has(id);
-  if (shouldOpen) EXPANDED_ENTRIES.add(id); else EXPANDED_ENTRIES.delete(id);
+  closeEntryMenus();
+  if (shouldOpen) {
+    EXPANDED_ENTRIES.clear();
+    EXPANDED_ENTRIES.add(id);
+  } else EXPANDED_ENTRIES.delete(id);
+  document.querySelectorAll(".entrycard.open").forEach((other) => {
+    if (other.id !== "entry-" + id) {
+      other.classList.remove("open");
+      other.querySelector(".entry-toggle")?.setAttribute("aria-expanded", "false");
+    }
+  });
   if (card) {
     card.classList.toggle("open", shouldOpen);
-    card.querySelector(".entrysummary")?.setAttribute("aria-expanded", String(shouldOpen));
-    if (shouldOpen) setTimeout(() => card.querySelector("input")?.focus(), 0);
+    card.querySelector(".entry-toggle")?.setAttribute("aria-expanded", String(shouldOpen));
   }
+}
+
+function dismissWeekBanner(key, button) {
+  try { sessionStorage.setItem(key, "1"); } catch (_) {}
+  button?.closest(".banner")?.remove();
 }
 
 function syncDayUI(dateISO) {
@@ -689,29 +1047,115 @@ function goToDay(dateISO) {
   const card = grid?.querySelector(`[data-work-date="${dateISO}"]`);
   if (!card) return;
   ACTIVE_DAY = dateISO;
+  closeEntryMenus();
+  EXPANDED_ENTRIES.clear();
+  document.querySelectorAll(".entrycard.open").forEach((entry) => {
+    entry.classList.remove("open");
+    entry.querySelector(".entry-toggle")?.setAttribute("aria-expanded", "false");
+  });
+  const firstEntry = card.querySelector(".entrycard");
+  if (firstEntry?.dataset.id) {
+    EXPANDED_ENTRIES.add(String(firstEntry.dataset.id));
+    firstEntry.classList.add("open");
+    firstEntry.querySelector(".entry-toggle")?.setAttribute("aria-expanded", "true");
+  }
   syncDayUI(dateISO);
   card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
 }
-function slideDays(direction) {
-  const grid = $("weekgrid");
-  if (!grid) return;
-  const cards = [...grid.querySelectorAll(".daycol")];
-  if (!cards.length) return;
-  const current = Math.max(0, cards.findIndex(c => c.dataset.workDate === ACTIVE_DAY));
-  const next = Math.max(0, Math.min(cards.length - 1, current + direction));
-  goToDay(cards[next].dataset.workDate);
+function closeEntryMenus(exceptId = null) {
+  document.querySelectorAll(".entry-menu").forEach((menu) => {
+    if (exceptId && menu.id === "entry-menu-" + exceptId) return;
+    menu.classList.add("hidden");
+    menu.parentElement?.querySelector(".entry-menu-btn")?.setAttribute("aria-expanded", "false");
+  });
 }
-function shiftWeek(n) { WEEK = addDays(WEEK, n * 7); ACTIVE_DAY = null; render(); }
-function thisWeek() { WEEK = mondayOf(todayISO()); ACTIVE_DAY = todayISO(); render(); }
+function toggleEntryMenu(event, id) {
+  event?.stopPropagation();
+  id = String(id);
+  const menu = document.getElementById("entry-menu-" + id);
+  const button = event?.currentTarget;
+  if (!menu || !button) return;
+  const opening = menu.classList.contains("hidden");
+  closeEntryMenus(id);
+  menu.classList.toggle("hidden", !opening);
+  button.setAttribute("aria-expanded", String(opening));
+}
+function focusEntryProject(id) {
+  id = String(id);
+  closeEntryMenus();
+  EXPANDED_ENTRIES.clear();
+  EXPANDED_ENTRIES.add(id);
+  const card = document.getElementById("entry-" + id);
+  card?.classList.add("open");
+  card?.querySelector(".entry-toggle")?.setAttribute("aria-expanded", "true");
+  setTimeout(() => {
+    const input = card?.querySelector("input");
+    input?.focus();
+    input?.select();
+  }, 0);
+}
+async function duplicateEntry(id) {
+  closeEntryMenus();
+  try {
+    const { data: source, error: readError } = await sb.from("time_entries").select("timesheet_id,work_date,project,hours,notes").eq("id", id).single();
+    if (readError) throw readError;
+    const { data, error } = await sb.from("time_entries").insert({
+      timesheet_id: source.timesheet_id,
+      work_date: source.work_date,
+      project: source.project || "",
+      hours: Number(source.hours || 1),
+      notes: source.notes || ""
+    }).select("id").single();
+    if (error) throw error;
+    ACTIVE_DAY = source.work_date;
+    EXPANDED_ENTRIES.clear();
+    if (data?.id) EXPANDED_ENTRIES.add(String(data.id));
+    ping("Entry duplicated");
+    await render();
+  } catch (e) { fail(e); }
+}
+function closeWeekMenu() {
+  const menu = $("week-menu");
+  const backdrop = $("week-menu-backdrop");
+  const button = $("week-menu-button");
+  if (!menu || !button) return;
+  menu.classList.add("hidden");
+  backdrop?.classList.add("hidden");
+  button.setAttribute("aria-expanded", "false");
+}
+function toggleWeekMenu(event) {
+  event?.stopPropagation();
+  const menu = $("week-menu");
+  const backdrop = $("week-menu-backdrop");
+  const button = $("week-menu-button");
+  if (!menu || !button) return;
+  const opening = menu.classList.contains("hidden");
+  menu.classList.toggle("hidden", !opening);
+  backdrop?.classList.toggle("hidden", !opening);
+  button.setAttribute("aria-expanded", String(opening));
+  if (opening) setTimeout(() => menu.querySelector(".week-menu-item:not([disabled])")?.focus(), 0);
+}
+function chooseWeek(n) { closeWeekMenu(); shiftWeek(n); }
+function chooseThisWeek() { closeWeekMenu(); thisWeek(); }
+function shiftWeek(n) { WEEK = addDays(WEEK, n * 7); ACTIVE_DAY = null; EXPANDED_ENTRIES.clear(); render(); }
+function thisWeek() { WEEK = mondayOf(todayISO()); ACTIVE_DAY = todayISO(); EXPANDED_ENTRIES.clear(); render(); }
 
 let saveFade = {};
+let globalSaveFade;
 function markSaved(id, state) {
   const el = $("st-" + id);
-  if (!el) return;
+  const global = $("global-save-state");
   clearTimeout(saveFade[id]);
-  if (state === "saving") { el.textContent = "Saving…"; el.className = "savemark saving show"; return; }
-  el.textContent = "Saved ✓"; el.className = "savemark show";
-  saveFade[id] = setTimeout(() => { el.className = "savemark"; }, 1800);
+  clearTimeout(globalSaveFade);
+  if (state === "saving") {
+    if (el) { el.textContent = "Saving…"; el.className = "savemark saving show"; }
+    if (global) { global.textContent = "Saving…"; global.className = "global-save-state saving show"; }
+    return;
+  }
+  if (el) { el.textContent = "✓ Saved"; el.className = "savemark show"; }
+  if (global) { global.textContent = "✓ Saved"; global.className = "global-save-state show"; }
+  saveFade[id] = setTimeout(() => { if (el) el.className = "savemark"; }, 1600);
+  globalSaveFade = setTimeout(() => { if (global) global.className = "global-save-state"; }, 1600);
 }
 
 async function addEntry(dateISO) {
@@ -720,6 +1164,7 @@ async function addEntry(dateISO) {
     const { data, error } = await sb.from("time_entries").insert({ timesheet_id: sheet.id, work_date: dateISO, project: "", hours: 1, notes: "" }).select("id").single();
     if (error) throw error;
     ACTIVE_DAY = dateISO;
+    EXPANDED_ENTRIES.clear();
     if (data?.id) EXPANDED_ENTRIES.add(String(data.id));
     await render();
   } catch (e) { fail(e); }
@@ -738,9 +1183,42 @@ async function editEntry(id, field, value) {
   if (field === "hours") { await render(); markSaved(id); } // re-render updates totals, then confirm
   else markSaved(id);
 }
-async function delEntry(id) {
-  const { error } = await sb.from("time_entries").delete().eq("id", id);
-  if (error) fail(error); else { EXPANDED_ENTRIES.delete(String(id)); render(); }
+function delEntry(id) {
+  const root = $("modal-root");
+  root.innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-entry-title">
+        <div class="sec-title"><h2 id="delete-entry-title"><span class="slash">/</span> Delete entry</h2></div>
+        <p style="margin:0 0 16px;color:var(--steel);">Delete this time entry? This cannot be undone.</p>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn ghost" type="button" onclick="closeModal()"><span>Cancel</span></button>
+          <button class="btn danger" type="button" onclick="deleteEntryConfirmed('${id}')"><span>Delete entry</span></button>
+        </div>
+      </div>
+    </div>`;
+}
+async function deleteEntryConfirmed(id) {
+  const { data, error } = await sb.from("time_entries").delete().eq("id", id).select("id");
+  if (error) return fail(error);
+  if (!data || data.length === 0) return fail("The entry could not be deleted. Check the database delete policy for time entries.");
+  closeModal();
+  EXPANDED_ENTRIES.delete(String(id));
+  ping("Entry deleted");
+  render();
+}
+function confirmSubmitWeek() {
+  const root = $("modal-root");
+  root.innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="submit-week-title">
+        <div class="sec-title"><h2 id="submit-week-title"><span class="slash">/</span> Submit week?</h2></div>
+        <p style="margin:0 0 16px;color:var(--steel);">After submission, the week will be locked until it is reviewed.</p>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn ghost" type="button" onclick="closeModal()"><span>Keep editing</span></button>
+          <button class="btn" type="button" onclick="submitWeek()"><span>Submit week</span></button>
+        </div>
+      </div>
+    </div>`;
 }
 async function submitWeek() {
   const sheet = await loadWeek(WEEK);
@@ -751,6 +1229,7 @@ async function submitWeek() {
   if (bad) return fail("Every line needs a note before you can submit.");
   const { error } = await sb.from("timesheets").update({ status: "submitted" }).eq("id", sheet.id);
   if (error) return fail(error);
+  closeModal();
   ping("Week submitted for approval");
   render();
 }
@@ -786,6 +1265,7 @@ async function submitChange(sheetId, wasPaid) {
    EMPLOYEE — REQUESTS
    ============================================================ */
 let REQ_TYPE = "reimbursement";
+let RECEIPTS = [];   // staged receipt photos, held until submit
 async function viewRequests(v) {
   const { data: mine, error } = await sb.from("requests").select("*").eq("user_id", ME.id).order("created_at", { ascending: false });
   if (error) throw error;
@@ -799,6 +1279,7 @@ async function viewRequests(v) {
         </div>${chip(r.paid ? "paid" : r.status)}
       </div>
       <div class="steel" style="font-size:14px;margin-top:6px;">${esc(r.notes)}</div>
+      ${receiptTag(r)}
     </div>`).join("") : emptyBox("No requests yet.");
   const ph = REQ_TYPE === "perdiem" ? "Travel days, job location…" : "What you bought, vendor, receipt info…";
   v.innerHTML = `
@@ -813,21 +1294,119 @@ async function viewRequests(v) {
         <label class="field"><div class="lbl">Amount ($)</div><input id="r_amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
       </div>
       <label class="field"><div class="lbl">Notes (required)</div><textarea id="r_notes" placeholder="${ph}"></textarea></label>
+
+      <div class="field">
+        <div class="lbl">Receipt photos</div>
+        <div class="banner warn receipt-note"><b>Receipts required.</b> Attach a photo of each receipt. You can still submit without one, but your admin may send it back.</div>
+        <input id="r_files" type="file" accept="image/*" multiple capture="environment" class="hidden" onchange="stageReceipts(this.files)" />
+        <button type="button" class="receipt-add" onclick="document.getElementById('r_files').click()">
+          <span class="cam">⧉</span> Add receipt photo
+        </button>
+        <div id="r_thumbs" class="receipt-thumbs"></div>
+      </div>
+
       <div id="r_err" class="err hidden"></div>
-      <button class="btn" onclick="submitReq()"><span>Submit request</span></button>
+      <button class="btn" id="r_submit" onclick="submitReq()"><span>Submit request</span></button>
     </div>
     ${sec("My requests")}${list}`;
+  renderReceiptThumbs();
 }
 function setReqType(t) { REQ_TYPE = t; render(); }
+
+/* Per diem doesn't need a receipt; reimbursement does. */
+function receiptTag(r) {
+  const n = (r.receipt_paths || []).length;
+  if (n > 0) {
+    return `<button type="button" class="receipt-tag has" onclick="viewReceipts('${r.id}')">
+      <span class="cam">⧉</span> ${n} receipt${n > 1 ? "s" : ""} — view</button>`;
+  }
+  if (r.type === "perdiem") return "";
+  return `<span class="receipt-tag none"><span class="cam">!</span> No receipt attached</span>`;
+}
+async function viewReceipts(reqId) {
+  const { data, error } = await sb.from("requests").select("receipt_paths, notes").eq("id", reqId).single();
+  if (error) return fail(error);
+  const urls = await receiptUrls(data.receipt_paths);
+  if (!urls.length) return fail("Could not load the receipt photos.");
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal receipt-modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Receipts</h2></div>
+    <p class="steel" style="font-size:14px;margin-top:-6px;">${esc(data.notes)}</p>
+    <div class="receipt-full">${urls.map((u) => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Receipt" /></a>`).join("")}</div>
+    <button class="btn ghost" onclick="closeModal()"><span>Close</span></button>
+  </div></div>`;
+}
+
+/* ---------- receipt staging (held in memory until submit) ---------- */
+function stageReceipts(fileList) {
+  const files = [...(fileList || [])];
+  for (const f of files) {
+    if (!f.type.startsWith("image/")) { fail("Only image files can be attached."); continue; }
+    if (f.size > 10 * 1024 * 1024) { fail(`${f.name} is over 10 MB — take a smaller photo.`); continue; }
+    RECEIPTS.push({ id: uid(), file: f, url: URL.createObjectURL(f) });
+  }
+  $("r_files").value = "";
+  renderReceiptThumbs();
+}
+function removeReceipt(id) {
+  const i = RECEIPTS.findIndex((r) => r.id === id);
+  if (i > -1) { URL.revokeObjectURL(RECEIPTS[i].url); RECEIPTS.splice(i, 1); }
+  renderReceiptThumbs();
+}
+function renderReceiptThumbs() {
+  const box = $("r_thumbs");
+  if (!box) return;
+  box.innerHTML = RECEIPTS.map((r) => `
+    <div class="rthumb">
+      <img src="${r.url}" alt="Receipt preview" />
+      <button type="button" class="rthumb-x" onclick="removeReceipt('${r.id}')" aria-label="Remove photo">×</button>
+    </div>`).join("");
+  const note = document.querySelector(".receipt-note");
+  if (note) note.classList.toggle("hidden", RECEIPTS.length > 0);
+}
+async function uploadReceipts() {
+  const paths = [];
+  for (const r of RECEIPTS) {
+    const ext = (r.file.name.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
+    const path = `${ME.id}/${uid()}.${ext}`;
+    const { error } = await sb.storage.from("receipts").upload(path, r.file, {
+      contentType: r.file.type, upsert: false,
+    });
+    if (error) throw new Error("Receipt upload failed: " + error.message);
+    paths.push(path);
+  }
+  return paths;
+}
+function clearReceipts() {
+  RECEIPTS.forEach((r) => URL.revokeObjectURL(r.url));
+  RECEIPTS = [];
+}
+/* Signed URLs so the private bucket stays private. */
+async function receiptUrls(paths) {
+  if (!paths || !paths.length) return [];
+  const { data, error } = await sb.storage.from("receipts").createSignedUrls(paths, 3600);
+  if (error) return [];
+  return (data || []).filter((d) => d.signedUrl).map((d) => d.signedUrl);
+}
 async function submitReq() {
   const req_date = $("r_date").value, amount = Number($("r_amount").value), notes = $("r_notes").value.trim();
   const err = $("r_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
   if (!req_date) return bad("Pick a date.");
   if (!amount || amount <= 0) return bad("Enter a valid amount.");
   if (!notes) return bad("Notes are required — what is this for?");
-  const { error } = await sb.from("requests").insert({ user_id: ME.id, type: REQ_TYPE, req_date, amount, notes });
-  if (error) return fail(error);
-  ping((REQ_TYPE === "perdiem" ? "Per diem" : "Reimbursement") + " submitted"); render();
+
+  // Receipts are expected, not enforced — nudge once, then let it through.
+  if (RECEIPTS.length === 0 && !confirm("No receipt photo attached.\n\nReceipts are required for reimbursement. You can submit anyway, but your admin may send it back.\n\nSubmit without a receipt?")) return;
+
+  const btn = $("r_submit");
+  btn.disabled = true;
+  try {
+    const receipt_paths = await uploadReceipts();
+    const { error } = await sb.from("requests").insert({ user_id: ME.id, type: REQ_TYPE, req_date, amount, notes, receipt_paths });
+    if (error) throw error;
+    clearReceipts();
+    ping((REQ_TYPE === "perdiem" ? "Per diem" : "Reimbursement") + " submitted");
+    render();
+  } catch (e) { btn.disabled = false; fail(e); }
 }
 
 /* ============================================================
@@ -847,9 +1426,21 @@ async function viewPay(v) {
       <div class="mono" style="font-weight:700;font-size:20px;">${money(pd.net)}</div></div>`;
 }
 function payStub(p, x) {
-  const gl = p.pay_type === "hourly" ? `Gross — ${x.hours} hrs × ${money(Number(p.rate || 0))}/hr` : `Gross — salary × weeks approved`;
+  const rate = Number(p.rate || 0);
+  const { mult } = otConf(p);
+  let grossRows;
+  if (p.pay_type === "hourly") {
+    const reg = x.regHours ?? x.hours;
+    grossRows = `<div class="stub-row"><span class="l">Regular — ${reg} hrs × ${money(rate)}/hr</span><span class="v">${money(reg * rate)}</span></div>`;
+    if (x.otHours > 0) {
+      grossRows += `<div class="stub-row"><span class="l">Overtime — ${x.otHours} hrs × ${money(rate)} × ${mult}</span><span class="v">${money(x.otHours * rate * mult)}</span></div>`;
+    }
+    grossRows += `<div class="stub-row"><span class="l">Gross pay</span><span class="v">${money(x.gross)}</span></div>`;
+  } else {
+    grossRows = `<div class="stub-row"><span class="l">Gross — salary × weeks approved</span><span class="v">${money(x.gross)}</span></div>`;
+  }
   return `<div class="card red">
-    <div class="stub-row"><span class="l">${gl}</span><span class="v">${money(x.gross)}</span></div>
+    ${grossRows}
     <div class="stub-row"><span class="l">Tax withholding (${p.tax_pct || 0}%)</span><span class="v red">−${money(x.tax)}</span></div>
     <div class="stub-row"><span class="l">Reimbursements + per diem (untaxed)</span><span class="v">+${money(x.reimb)}</span></div>
     <div class="stub-row bold"><span class="l">Net paycheck</span><span class="v">${money(x.net)}</span></div>
@@ -893,7 +1484,8 @@ async function viewApprovals(v) {
         <div style="display:flex;gap:8px;">
           <button class="btn sm ok" onclick="decideReq('${r.id}','approved')"><span>Approve</span></button>
           <button class="btn sm danger" onclick="decideReq('${r.id}','declined')"><span>Decline</span></button></div></div>
-      <div class="steel" style="font-size:14px;margin-top:6px;">${esc(r.notes)}</div></div>`).join("") : emptyBox("No requests waiting.");
+      <div class="steel" style="font-size:14px;margin-top:6px;">${esc(r.notes)}</div>
+      ${receiptTag(r)}</div>`).join("") : emptyBox("No requests waiting.");
 
   const crCards = (crs || []).length ? crs.map((c) =>
     `<div class="card thin" style="border-left:4px solid var(--warn);">
@@ -1001,45 +1593,230 @@ async function callFn(body) {
 }
 
 let TEAM_PAYTYPE = "hourly";
+let TEAM_FILTER = "all";
+let TEAM_MEMBERS = new Map();
+
+function formatHours(n) {
+  return Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+function firstName(name) {
+  return String(name || "").trim().split(/\s+/)[0] || "Account";
+}
+function initials(name) {
+  return String(name || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0] || "").join("").toUpperCase() || "?";
+}
+function teamStatusInfo(sheet) {
+  if (!sheet) return { filter: "draft", css: "draft", label: "Not started" };
+  if (sheet.paid && sheet.status === "approved") return { filter: "approved", css: "paid", label: "Paid" };
+  if (sheet.status === "submitted") return { filter: "submitted", css: "submitted", label: "Submitted" };
+  if (sheet.status === "declined") return { filter: "declined", css: "declined", label: "Sent back" };
+  if (sheet.status === "approved") return { filter: "approved", css: "approved", label: "Approved" };
+  return { filter: "draft", css: "draft", label: "Draft" };
+}
+function setTeamFilter(filter) {
+  TEAM_FILTER = filter;
+  render();
+}
+
 async function viewTeam(v) {
-  const { data: emps } = await sb.from("profiles").select("*").eq("role", "employee").order("display_name");
+  const currentWeek = mondayOf(todayISO());
+  const [{ data: emps, error: empErr }, { data: sheets, error: sheetErr }] = await Promise.all([
+    sb.from("profiles").select("*").eq("role", "employee").order("display_name"),
+    sb.from("timesheets").select("*, time_entries(hours)").eq("week_start", currentWeek),
+  ]);
+  if (empErr) throw empErr;
+  if (sheetErr) throw sheetErr;
+
+  const employees = emps || [];
+  TEAM_MEMBERS = new Map(employees.map((u) => [u.id, u]));
+  const sheetByUser = new Map((sheets || []).map((s) => [s.user_id, s]));
+  const cardData = employees.map((u) => {
+    const sheet = sheetByUser.get(u.id) || null;
+    const total = (sheet?.time_entries || []).reduce((sum, e) => sum + Number(e.hours || 0), 0);
+    const status = teamStatusInfo(sheet);
+    return { u, sheet, total, status };
+  });
+
+  const activeData = cardData.filter((x) => x.u.active);
+  const counts = {
+    all: cardData.length,
+    draft: activeData.filter((x) => x.status.filter === "draft").length,
+    submitted: activeData.filter((x) => x.status.filter === "submitted").length,
+    declined: activeData.filter((x) => x.status.filter === "declined").length,
+    approved: activeData.filter((x) => x.status.filter === "approved").length,
+  };
+  const filtered = TEAM_FILTER === "all" ? cardData : cardData.filter((x) => x.status.filter === TEAM_FILTER);
+
+  const filters = [
+    ["all", "All"],
+    ["draft", "Draft"],
+    ["submitted", "Submitted"],
+    ["declined", "Sent back"],
+    ["approved", "Approved"],
+  ].map(([id, label]) => `<button type="button" class="team-filter ${TEAM_FILTER === id ? "on" : ""}" onclick="setTeamFilter('${id}')">${label}<span class="team-filter-count">${counts[id]}</span></button>`).join("");
+
+  const cards = filtered.length ? filtered.map(({ u, sheet, total, status }) => {
+    const meta = u.pay_type === "hourly" ? `Hourly · ${money(Number(u.rate || 0))}/hr` : `Salary · ${money(Number(u.salary_per_period || 0))}/wk`;
+    const progress = Math.min(100, Math.max(0, (total / 40) * 100));
+    const hoursClass = total > 40 ? "overtime" : total >= 40 ? "complete" : total > 0 ? "progress" : "zero";
+    const hoursNote = total > 40
+      ? `+${formatHours(total - 40)} hrs overtime`
+      : total >= 40
+        ? "40-hour target reached"
+        : total > 0
+          ? `${formatHours(40 - total)} hrs remaining`
+          : "No time entered";
+    const actionLabel = status.filter === "submitted" ? "Review timesheet" : "View timesheet";
+    return `<article class="team-card ${status.css} ${u.active ? "" : "inactive"}">
+      <div class="team-card-head">
+        <div class="team-person">
+          <div class="team-avatar" aria-hidden="true">${esc(initials(u.display_name))}</div>
+          <div style="min-width:0;">
+            <div class="team-name">${esc(u.display_name)} ${u.active ? "" : '<span class="steel" style="font-size:12px;">(inactive)</span>'}</div>
+            <div class="team-meta">@${esc(u.username)} · ${meta}</div>
+          </div>
+        </div>
+        <span class="team-status ${status.css}">${status.label}</span>
+      </div>
+      <div class="team-hours">
+        <div>
+          <div class="team-hours-label">Hours worked this week</div>
+          <div class="team-hours-value ${hoursClass}">${formatHours(total)} <span>hrs</span></div>
+        </div>
+        <div class="team-hours-note ${hoursClass}">${hoursNote}</div>
+      </div>
+      <div class="team-progress ${hoursClass}" style="--progress:${progress}%"><span></span></div>
+      <div class="team-card-actions">
+        <button class="btn sm dark primary" onclick="openTeamTimesheet('${u.id}')"><span>${actionLabel}</span></button>
+        <button class="btn sm ghost edit-member" onclick="openTeamMemberEdit('${u.id}')"><span>Edit</span></button>
+      </div>
+    </article>`;
+  }).join("") : emptyBox("No employees match this filter.");
+
   const payField = TEAM_PAYTYPE === "hourly"
     ? `<label class="field"><div class="lbl">Rate ($/hr)</div><input id="t_rate" type="number" min="0" step="0.5" /></label>`
     : `<label class="field"><div class="lbl">Salary / week ($)</div><input id="t_sal" type="number" min="0" step="25" /></label>`;
-  const list = (emps || []).length ? emps.map((u) => {
-    const meta = u.pay_type === "hourly" ? `Hourly · ${money(Number(u.rate || 0))}/hr` : `Salary · ${money(Number(u.salary_per_period || 0))}/wk`;
-    return `<div class="card thin">
-      <div class="row"><div><div style="font-weight:700;">${esc(u.display_name)} ${u.active ? "" : '<span class="steel">(inactive)</span>'}</div>
-        <div class="steel" style="font-size:13px;">@${esc(u.username)} · ${meta} · ${u.tax_pct || 0}% tax</div></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn sm ghost" onclick='editPay(${esc(JSON.stringify(u))})'><span>Pay</span></button>
-          <button class="btn sm ghost" onclick="resetPin('${u.id}','${esc(u.display_name)}')"><span>PIN</span></button>
-          <button class="btn sm danger" onclick="toggleActive('${u.id}', ${u.active})"><span>${u.active ? "Disable" : "Enable"}</span></button>
-        </div></div></div>`;
-  }).join("") : emptyBox("No crew yet.");
 
-  v.innerHTML = `${sec("Add crew member")}
-    <div class="card">
-      <div class="grid2">
-        <label class="field"><div class="lbl">Display name</div><input id="t_name" placeholder="Full name" /></label>
-        <label class="field"><div class="lbl">Username</div><input id="t_user" placeholder="lowercase, no spaces" /></label>
-      </div>
-      <label class="field"><div class="lbl">PIN (4–8 digits)</div><input id="t_pin" inputmode="numeric" placeholder="6 digits recommended" /></label>
-      <div class="grid3">
-        <label class="field"><div class="lbl">Pay type</div>
-          <select id="t_type" onchange="TEAM_PAYTYPE=this.value; render()">
-            <option value="hourly" ${TEAM_PAYTYPE === "hourly" ? "selected" : ""}>Hourly</option>
-            <option value="salary" ${TEAM_PAYTYPE === "salary" ? "selected" : ""}>Salary</option>
-          </select></label>
-        ${payField}
-        <label class="field"><div class="lbl">Tax withholding (%)</div><input id="t_tax" type="number" min="0" max="60" step="0.5" /></label>
-      </div>
-      <div id="t_err" class="err hidden"></div>
-      <button class="btn" id="t_add"><span>Add crew member</span></button>
+  v.innerHTML = `<div class="team-toolbar">
+      ${sec("Team", `<span class="steel" style="font-size:13px;">${employees.length} ${employees.length === 1 ? "employee" : "employees"} · ${weekRange(currentWeek)}</span>`)}
     </div>
-    ${sec("Crew")}${list}`;
+    <div class="team-filters" role="group" aria-label="Filter employees by timesheet status">${filters}</div>
+    <div class="team-grid">${cards}</div>
+    <details class="team-add-panel">
+      <summary>Add team member</summary>
+      <div class="team-add-body">
+        <div class="grid2">
+          <label class="field"><div class="lbl">Display name</div><input id="t_name" placeholder="Full name" /></label>
+          <label class="field"><div class="lbl">Username</div><input id="t_user" placeholder="lowercase, no spaces" /></label>
+        </div>
+        <label class="field"><div class="lbl">PIN (4–8 digits)</div><input id="t_pin" inputmode="numeric" placeholder="6 digits recommended" /></label>
+        <div class="grid3">
+          <label class="field"><div class="lbl">Pay type</div>
+            <select id="t_type" onchange="TEAM_PAYTYPE=this.value; render()">
+              <option value="hourly" ${TEAM_PAYTYPE === "hourly" ? "selected" : ""}>Hourly</option>
+              <option value="salary" ${TEAM_PAYTYPE === "salary" ? "selected" : ""}>Salary</option>
+            </select></label>
+          ${payField}
+          <label class="field"><div class="lbl">Tax withholding (%)</div><input id="t_tax" type="number" min="0" max="60" step="0.5" /></label>
+        </div>
+        <div id="t_err" class="err hidden"></div>
+        <button class="btn" id="t_add"><span>Add team member</span></button>
+      </div>
+    </details>`;
   $("t_add").onclick = addCrew;
 }
+
+async function openTeamTimesheet(userId, weekStart = mondayOf(todayISO())) {
+  const root = $("modal-root");
+  root.innerHTML = `<div class="modal-bg"><div class="modal team-timesheet-modal"><div class="review-modal-body"><div class="spinner" style="min-height:240px;">Loading timesheet…</div></div></div></div>`;
+  try {
+    const [{ data: employee, error: employeeErr }, { data: sheets, error: sheetsErr }] = await Promise.all([
+      sb.from("profiles").select("*").eq("id", userId).single(),
+      sb.from("timesheets").select("*, time_entries(*)").eq("user_id", userId).order("week_start", { ascending: false }).limit(26),
+    ]);
+    if (employeeErr) throw employeeErr;
+    if (sheetsErr) throw sheetsErr;
+
+    const currentWeek = mondayOf(todayISO());
+    const sheetMap = new Map((sheets || []).map((s) => [s.week_start, s]));
+    const weeks = Array.from(new Set([currentWeek, ...(sheets || []).map((s) => s.week_start)])).sort().reverse();
+    const selectedWeek = weeks.includes(weekStart) ? weekStart : currentWeek;
+    const sheet = sheetMap.get(selectedWeek) || null;
+    const entries = (sheet?.time_entries || []).slice().sort((a, b) => (a.work_date || "").localeCompare(b.work_date || "") || (a.created_at || "").localeCompare(b.created_at || ""));
+    const total = entries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
+    const status = teamStatusInfo(sheet);
+    const ot = Math.max(0, total - 40);
+
+    const weekOptions = weeks.map((ws) => {
+      const s = sheetMap.get(ws);
+      const h = (s?.time_entries || []).reduce((sum, e) => sum + Number(e.hours || 0), 0);
+      return `<option value="${ws}" ${ws === selectedWeek ? "selected" : ""}>${weekRange(ws)} · ${formatHours(h)} hrs</option>`;
+    }).join("");
+
+    const daySections = DAYS.map((dayName, index) => {
+      const date = addDays(selectedWeek, index);
+      const dayEntries = entries.filter((e) => e.work_date === date);
+      const dayTotal = dayEntries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
+      const lines = dayEntries.length ? dayEntries.map((e) => `<div class="review-line">
+        <div><div class="review-project">${esc(e.project) || "Untitled project"}</div><div class="review-notes">${esc(e.notes) || "No notes provided."}</div></div>
+        <div class="review-line-hours">${formatHours(e.hours)} hrs</div>
+      </div>`).join("") : `<div class="review-empty">No time logged</div>`;
+      return `<section class="review-day">
+        <div class="review-day-head"><div class="review-day-title">${dayName} · ${fmtDate(date)}</div><div class="review-day-total">${formatHours(dayTotal)} hrs</div></div>
+        ${lines}
+      </section>`;
+    }).join("");
+
+    const declineBanner = sheet?.status === "declined" && sheet.decline_reason
+      ? `<div class="banner bad"><b>Sent back.</b> ${esc(sheet.decline_reason)}</div>`
+      : "";
+    const actionBar = sheet?.status === "submitted"
+      ? `<div class="review-actions">
+          <button class="btn ok" onclick="approveTeamTimesheet('${sheet.id}')"><span>Approve week</span></button>
+          <button class="btn danger" onclick="sendBackTeamTimesheet('${sheet.id}')"><span>Send back</span></button>
+        </div>`
+      : "";
+
+    root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal team-timesheet-modal">
+      <div class="review-modal-head">
+        <div><div class="review-modal-title">${esc(employee.display_name)}</div><div class="review-modal-sub">Read-only timesheet review</div></div>
+        <button type="button" class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="review-modal-body">
+        <div class="review-week-row">
+          <label class="field"><div class="lbl">Week</div><select onchange="openTeamTimesheet('${userId}',this.value)">${weekOptions}</select></label>
+          <div class="review-total"><div class="k">Hours worked</div><div class="v">${formatHours(total)}</div></div>
+          <div><span class="team-status ${status.css}">${status.label}</span></div>
+        </div>
+        ${ot ? `<div class="banner warn"><b>Overtime:</b> ${formatHours(ot)} hours above 40.</div>` : ""}
+        ${declineBanner}
+        <div class="review-days">${daySections}</div>
+      </div>
+      ${actionBar}
+    </div></div>`;
+  } catch (e) {
+    fail(e);
+    root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal team-timesheet-modal"><div class="review-modal-head"><div class="review-modal-title">Timesheet unavailable</div><button class="modal-close" onclick="closeModal()">×</button></div><div class="review-modal-body"><div class="banner bad">${esc(e.message || "Could not load this timesheet.")}</div></div></div></div>`;
+  }
+}
+
+async function approveTeamTimesheet(id) {
+  const { error } = await sb.from("timesheets").update({ status: "approved", decided_at: new Date().toISOString(), decided_by: ME.id }).eq("id", id);
+  if (error) return fail(error);
+  closeModal();
+  ping("Week approved");
+  render();
+}
+async function sendBackTeamTimesheet(id) {
+  const reason = prompt("What needs fixing?");
+  if (reason === null) return;
+  const { error } = await sb.from("timesheets").update({ status: "declined", decline_reason: reason.trim(), decided_at: new Date().toISOString(), decided_by: ME.id }).eq("id", id);
+  if (error) return fail(error);
+  closeModal();
+  ping("Timesheet sent back");
+  render();
+}
+
 async function addCrew() {
   const err = $("t_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
   const body = {
@@ -1056,31 +1833,154 @@ async function addCrew() {
   if (!/^[a-z0-9._-]{2,32}$/.test(body.username)) return bad("Username: 2–32 chars, a–z 0–9 . _ -");
   if (!/^\d{4,8}$/.test(body.pin)) return bad("PIN must be 4–8 digits.");
   $("t_add").disabled = true;
-  try { await callFn(body); ping("Crew member added"); render(); }
+  try { await callFn(body); ping("Team member added"); render(); }
   catch (e) { bad(e.message); $("t_add").disabled = false; }
 }
+function openTeamMemberEdit(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  const stateLabel = u.active ? "Disable employee" : "Enable employee";
+  const stateHelp = u.active ? "Prevent this employee from logging in." : "Restore this employee's access.";
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal team-edit-modal">
+    <div class="team-edit-head">
+      <div><div class="team-edit-name">Edit ${esc(firstName(u.display_name))}</div><div class="team-edit-sub">Employee settings and account access</div></div>
+      <button type="button" class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+    </div>
+    <div class="team-edit-list">
+      <button type="button" class="team-edit-action" onclick="editProfile('${u.id}')">
+        <span><strong>Edit profile</strong><small>Update the employee's display name.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action" onclick="manageTeamPay('${u.id}')">
+        <span><strong>Manage pay</strong><small>Pay type, rate, salary, and withholding.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action" onclick="resetTeamPin('${u.id}')">
+        <span><strong>Reset PIN</strong><small>Create a new 4–8 digit login PIN.</small></span><span class="arrow">›</span>
+      </button>
+      <button type="button" class="team-edit-action ${u.active ? "danger" : ""}" onclick="changeTeamAccess('${u.id}')">
+        <span><strong>${stateLabel}</strong><small>${stateHelp}</small></span><span class="arrow">›</span>
+      </button>
+    </div>
+  </div></div>`;
+}
+function editProfile(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Edit profile</h2></div>
+    <label class="field"><div class="lbl">Employee name</div><input id="profile_name" value="${esc(u.display_name)}" autocomplete="name" /></label>
+    <label class="field"><div class="lbl">Login username</div><input class="profile-readonly" value="${esc(u.username)}" disabled /></label>
+    <div class="hint" style="margin:-8px 0 15px;">The login username is tied to the account and cannot be changed from this screen.</div>
+    <div id="profile_err" class="err hidden"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn" id="profile_save"><span>Save profile</span></button>
+      <button class="btn ghost" onclick="openTeamMemberEdit('${u.id}')"><span>Back</span></button>
+    </div>
+  </div></div>`;
+  $("profile_save").onclick = () => saveProfile(u.id);
+  setTimeout(() => $("profile_name")?.focus(), 0);
+}
+async function saveProfile(id) {
+  const name = $("profile_name").value.trim();
+  const err = $("profile_err");
+  if (!name) { err.textContent = "Employee name is required."; err.classList.remove("hidden"); return; }
+  $("profile_save").disabled = true;
+  const { error } = await sb.from("profiles").update({ display_name: name }).eq("id", id);
+  if (error) { $("profile_save").disabled = false; return fail(error); }
+  closeModal();
+  ping("Profile updated");
+  render();
+}
+function manageTeamPay(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  editPay(u);
+}
+function resetTeamPin(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  closeModal();
+  resetPin(u.id, u.display_name);
+}
+function changeTeamAccess(id) {
+  const u = TEAM_MEMBERS.get(id);
+  if (!u) return fail("Team member not found.");
+  const action = u.active ? "disable" : "enable";
+  if (!confirm(`${action[0].toUpperCase() + action.slice(1)} ${u.display_name}?`)) return;
+  closeModal();
+  toggleActive(u.id, u.active);
+}
+
 function editPay(u) {
+  const conf = otConf(u);
   const root = $("modal-root");
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="sec-title"><h2><span class="slash">/</span> ${esc(u.display_name)} — pay</h2></div>
+    <div class="sec-title"><h2><span class="slash">/</span> Pay &amp; withholding</h2></div>
+    <p class="steel" style="font-size:14px;margin-top:-6px;">${esc(u.display_name)}</p>
+
     <label class="field"><div class="lbl">Pay type</div>
-      <select id="e_type"><option value="hourly" ${u.pay_type === "hourly" ? "selected" : ""}>Hourly</option><option value="salary" ${u.pay_type === "salary" ? "selected" : ""}>Salary</option></select></label>
+      <select id="e_type" onchange="togglePayFields()">
+        <option value="hourly" ${u.pay_type === "hourly" ? "selected" : ""}>Hourly</option>
+        <option value="salary" ${u.pay_type === "salary" ? "selected" : ""}>Salary</option>
+      </select></label>
     <div class="grid2">
-      <label class="field"><div class="lbl">Rate ($/hr)</div><input id="e_rate" type="number" min="0" step="0.5" value="${u.rate || 0}" /></label>
-      <label class="field"><div class="lbl">Salary / week ($)</div><input id="e_sal" type="number" min="0" step="25" value="${u.salary_per_period || 0}" /></label>
+      <label class="field" id="f_rate_wrap"><div class="lbl">Rate ($/hr)</div><input id="e_rate" type="number" min="0" step="0.5" value="${u.rate || 0}" /></label>
+      <label class="field" id="f_sal_wrap"><div class="lbl">Salary / week ($)</div><input id="e_sal" type="number" min="0" step="25" value="${u.salary_per_period || 0}" /></label>
     </div>
-    <label class="field"><div class="lbl">Tax withholding (%)</div><input id="e_tax" type="number" min="0" max="60" step="0.5" value="${u.tax_pct || 0}" /></label>
+
+    <label class="field"><div class="lbl">Tax withholding (%)</div>
+      <input id="e_tax" type="number" min="0" max="60" step="0.5" value="${u.tax_pct || 0}" />
+      <div class="hint">Applied to gross pay (including overtime). Reimbursements and per diem stay untaxed.</div>
+    </label>
+
+    <div id="ot_block">
+      <label class="field"><div class="lbl">Overtime</div>
+        <select id="e_ot_on" onchange="togglePayFields()">
+          <option value="1" ${conf.on ? "selected" : ""}>Pay overtime</option>
+          <option value="0" ${conf.on ? "" : "selected"}>No overtime — all hours at base rate</option>
+        </select>
+      </label>
+      <div class="grid2" id="ot_fields">
+        <label class="field"><div class="lbl">OT after (hrs/week)</div><input id="e_ot_thr" type="number" min="0" max="168" step="1" value="${conf.threshold}" /></label>
+        <label class="field"><div class="lbl">OT multiplier</div><input id="e_ot_mult" type="number" min="1" max="3" step="0.25" value="${conf.mult}" /></label>
+      </div>
+      <div class="hint" style="margin:-6px 0 14px;">Federal standard is 1.5× past 40 hrs in a week. Calculated per week, not per day.</div>
+    </div>
+
+    <div id="e_err" class="err hidden"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn" onclick="savePay('${u.id}')"><span>Save</span></button>
-      <button class="btn ghost" onclick="closeModal()"><span>Cancel</span></button>
+      <button class="btn ghost" onclick="openTeamMemberEdit('${u.id}')"><span>Back</span></button>
     </div></div></div>`;
+  togglePayFields();
+}
+function togglePayFields() {
+  const hourly = $("e_type")?.value === "hourly";
+  const otOn = $("e_ot_on")?.value === "1";
+  $("f_rate_wrap")?.classList.toggle("hidden", !hourly);
+  $("f_sal_wrap")?.classList.toggle("hidden", hourly);
+  $("ot_block")?.classList.toggle("hidden", !hourly);          // OT is hourly-only
+  $("ot_fields")?.classList.toggle("hidden", !otOn);
 }
 async function savePay(id) {
+  const err = $("e_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  const type = $("e_type").value;
+  const tax = Number($("e_tax").value || 0);
+  const thr = Number($("e_ot_thr").value || 40);
+  const mult = Number($("e_ot_mult").value || 1.5);
+  if (type === "hourly" && !(Number($("e_rate").value) > 0)) return bad("Enter an hourly rate.");
+  if (type === "salary" && !(Number($("e_sal").value) > 0)) return bad("Enter a weekly salary.");
+  if (!(tax >= 0 && tax <= 60)) return bad("Tax withholding must be between 0 and 60%.");
+  if (!(thr >= 0 && thr <= 168)) return bad("OT threshold must be between 0 and 168 hrs.");
+  if (!(mult >= 1 && mult <= 3)) return bad("OT multiplier must be between 1 and 3.");
+
   const payload = {
-    pay_type: $("e_type").value,
+    pay_type: type,
     rate: Number($("e_rate").value || 0),
     salary_per_period: Number($("e_sal").value || 0),
-    tax_pct: Number($("e_tax").value || 0),
+    tax_pct: tax,
+    ot_enabled: $("e_ot_on").value === "1",
+    ot_threshold: thr,
+    ot_multiplier: mult,
   };
   const { error } = await sb.from("profiles").update(payload).eq("id", id);
   if (error) return fail(error); closeModal(); ping("Pay updated"); render();
@@ -1102,6 +2002,11 @@ $("loginBtn").onclick = doLogin;
 $("signout").onclick = signOut;
 $("changepin").onclick = openPinChange;
 $("loginPin").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".week-selector")) closeWeekMenu();
+  if (!e.target.closest(".entrysummary")) closeEntryMenus();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeWeekMenu(); closeEntryMenus(); } });
 boot();
 </script>
 </body>
