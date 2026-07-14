@@ -177,7 +177,10 @@
     </div>
     <div style="text-align:right;">
       <div id="meName" style="color:#fff; font-weight:600; font-size:14px;"></div>
-      <button class="signout" id="signout">Sign out</button>
+      <div style="display:flex; gap:14px; justify-content:flex-end;">
+        <button class="signout" id="changepin">Change PIN</button>
+        <button class="signout" id="signout">Sign out</button>
+      </div>
     </div>
   </div></header>
   <div class="tabs"><div id="tabs" class="tabs-in"></div></div>
@@ -293,6 +296,46 @@ async function afterLogin() {
 }
 
 async function signOut() { await sb.auth.signOut(); ME = null; showLogin(); }
+
+/* ---------- self-service PIN change (any signed-in user) ---------- */
+function openPinChange() {
+  const email = `${ME.username}@${CFG.EMAIL_DOMAIN}`;
+  $("modal-root").innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="sec-title"><h2><span class="slash">/</span> Change PIN</h2></div>
+        <p class="steel" style="font-size:14px;margin-top:0;">Optional — leave it as is if you'd rather not.</p>
+        <label class="field"><div class="lbl">Current PIN</div>
+          <input id="pc_old" type="password" inputmode="numeric" placeholder="••••••" /></label>
+        <label class="field"><div class="lbl">New PIN (4–8 digits)</div>
+          <input id="pc_new" type="password" inputmode="numeric" placeholder="••••••" /></label>
+        <label class="field"><div class="lbl">Confirm new PIN</div>
+          <input id="pc_new2" type="password" inputmode="numeric" placeholder="••••••" /></label>
+        <div id="pc_err" class="err hidden"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" id="pc_save"><span>Update PIN</span></button>
+          <button class="btn ghost" onclick="closeModal()"><span>Cancel</span></button>
+        </div>
+      </div>
+    </div>`;
+  $("pc_save").onclick = () => savePinChange(email);
+}
+async function savePinChange(email) {
+  const oldPin = $("pc_old").value.trim();
+  const newPin = $("pc_new").value.trim();
+  const conf = $("pc_new2").value.trim();
+  const err = $("pc_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  if (!/^\d{4,8}$/.test(newPin)) return bad("New PIN must be 4–8 digits.");
+  if (newPin !== conf) return bad("New PINs don't match.");
+  if (newPin === oldPin) return bad("New PIN is the same as the old one.");
+  $("pc_save").disabled = true;
+  // verify the current PIN by re-authenticating (updateUser doesn't check it)
+  const { error: reauth } = await sb.auth.signInWithPassword({ email, password: oldPin });
+  if (reauth) { $("pc_save").disabled = false; return bad("Current PIN is wrong."); }
+  const { error } = await sb.auth.updateUser({ password: newPin });
+  if (error) { $("pc_save").disabled = false; return bad(error.message); }
+  closeModal(); ping("PIN updated");
+}
 
 /* ============================================================
    SHELL
@@ -795,6 +838,7 @@ async function toggleActive(id, active) {
 /* ---------- wire up + boot ---------- */
 $("loginBtn").onclick = doLogin;
 $("signout").onclick = signOut;
+$("changepin").onclick = openPinChange;
 $("loginPin").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
 boot();
 </script>
