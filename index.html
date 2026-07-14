@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SIETE · Crew Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --red:#C4222B; --red-dark:#8E151C; --ink:#16181A; --steel:#6E7275;
+    --line:#E3E1DD; --bg:#F4F3F0; --card:#FFFFFF; --ok:#1E7B3C; --warn:#B07A00;
+  }
+  *{box-sizing:border-box; border-radius:0;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Barlow',sans-serif; -webkit-font-smoothing:antialiased;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{width:100%; border:2px solid var(--line); padding:9px 10px;
+    font-family:'Barlow',sans-serif; font-size:15px; color:var(--ink); background:#fff; outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--ink);}
+  textarea{min-height:64px; resize:vertical;}
+  .hidden{display:none !important;}
+
+  /* wordmark */
+  .wm{line-height:1;}
+  .wm .a{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800;
+    letter-spacing:.02em; color:var(--red);}
+  .wm .b{font-family:'Barlow Condensed',sans-serif; font-weight:500; letter-spacing:.42em;
+    color:#9A9DA0; text-transform:uppercase; margin-top:2px;}
+
+  /* buttons */
+  .btn{border:2px solid var(--red); background:var(--red); color:#fff;
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
+    letter-spacing:.08em; text-transform:uppercase; padding:10px 22px;
+    transform:skewX(-10deg); transition:filter .15s;}
+  .btn>span{display:inline-block; transform:skewX(10deg);}
+  .btn:hover{filter:brightness(.88);}
+  .btn.sm{font-size:14px; padding:5px 14px;}
+  .btn.dark{background:var(--ink); border-color:var(--ink);}
+  .btn.ok{background:var(--ok); border-color:var(--ok);}
+  .btn.ghost{background:transparent; color:var(--ink); border-color:var(--ink);}
+  .btn.danger{background:transparent; color:var(--red); border-color:var(--red);}
+  .btn[disabled]{opacity:.45; cursor:not-allowed; filter:none;}
+  .btn.full{width:100%;}
+
+  .chip{display:inline-block; transform:skewX(-10deg);
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px;
+    letter-spacing:.08em; padding:2px 10px;}
+  .chip>span{display:inline-block; transform:skewX(10deg);}
+  .chip.pending{background:#FFF4DB; color:var(--warn);}
+  .chip.approved{background:#E2F2E6; color:var(--ok);}
+  .chip.declined{background:#FBE3E4; color:var(--red);}
+  .chip.paid{background:#EAEAEA; color:var(--steel);}
+
+  .field{display:block; margin-bottom:14px;}
+  .field .lbl{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:.12em; color:var(--steel); text-transform:uppercase; margin-bottom:4px;}
+  .field .hint{font-size:12px; color:var(--steel); margin-top:3px;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-top:3px solid var(--ink);
+    padding:18px; margin-bottom:16px;}
+  .card.thin{border-top:3px solid var(--line); padding:14px;}
+  .card.red{border-top:3px solid var(--red);}
+
+  .sec-title{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
+  .sec-title h2{font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:800;
+    font-size:24px; text-transform:uppercase; letter-spacing:.02em; margin:0;}
+  .sec-title h2 .slash{color:var(--red);}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .row{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .steel{color:var(--steel);}
+  .err{color:var(--red); font-size:13px; margin-bottom:10px;}
+  .empty{border:2px dashed var(--line); padding:26px 18px; text-align:center;
+    color:var(--steel); font-size:14px; margin-bottom:16px;}
+
+  /* header + tabs */
+  header{background:var(--ink); padding:14px 18px;}
+  .head-in{max-width:860px; margin:0 auto; display:flex; align-items:center; justify-content:space-between;}
+  .head-left{display:flex; align-items:center; gap:14px;}
+  .head-tag{border-left:2px solid var(--red); padding-left:12px;
+    font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700;
+    font-size:16px; letter-spacing:.14em; color:#fff;}
+  .signout{background:none; border:none; color:#9A9DA0;
+    font-family:'Barlow Condensed',sans-serif; font-size:13px; letter-spacing:.1em;
+    text-transform:uppercase; padding:0;}
+  .tabs{background:#fff; border-bottom:1px solid var(--line);}
+  .tabs-in{max-width:860px; margin:0 auto; display:flex;}
+  .tab{background:none; border:none; border-bottom:3px solid transparent; padding:12px 18px;
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--steel);}
+  .tab.active{border-bottom-color:var(--red); color:var(--ink);}
+  .tab .badge{margin-left:7px; background:var(--red); color:#fff; font-size:12px; padding:1px 7px;}
+  main{max-width:860px; margin:0 auto; padding:22px 18px 60px;}
+
+  /* login */
+  .login-wrap{min-height:100vh; background:var(--ink);}
+  .login{max-width:380px; margin:0 auto; padding:70px 20px;}
+  .login .head{margin-bottom:34px;}
+  .login .box{background:#fff; padding:22px; border-top:4px solid var(--red);}
+
+  .seg{display:flex; gap:8px; margin-bottom:14px;}
+  .seg button{flex:1; padding:9px 0; border:2px solid var(--line); background:#fff; color:var(--steel);
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; letter-spacing:.08em;
+    text-transform:uppercase;}
+  .seg button.on{border-color:var(--ink); background:var(--ink); color:#fff;}
+
+  .stub-row{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line);}
+  .stub-row .l{font-size:14px; color:var(--steel);}
+  .stub-row .v{font-family:'JetBrains Mono',monospace; font-weight:500; font-size:14px;}
+  .stub-row.bold .l{color:var(--ink); font-weight:700;}
+  .stub-row.bold .v{font-weight:700; font-size:18px;}
+  .v.red{color:var(--red);}
+
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) skewX(-10deg);
+    background:var(--ink); color:#fff; padding:10px 22px; font-family:'Barlow Condensed',sans-serif;
+    font-weight:700; letter-spacing:.08em; font-size:15px; box-shadow:0 4px 14px rgba(0,0,0,.25);
+    opacity:0; pointer-events:none; transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .toast>span{display:inline-block; transform:skewX(10deg);}
+
+  .totals{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; text-align:center;}
+  .totals .k{font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:.14em;
+    color:#9A9DA0; text-transform:uppercase;}
+  .totals .val{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; margin-top:3px;}
+
+  @media (max-width:560px){
+    .grid3{grid-template-columns:1fr;}
+    .totals{grid-template-columns:1fr 1fr;}
+    .head-tag{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login-wrap">
+  <div class="login">
+    <div class="head">
+      <div class="wm"><div class="a" style="font-size:52px;">SIETE</div><div class="b" style="font-size:17px;">Land &amp; Concrete</div></div>
+      <div style="margin-top:14px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:19px; letter-spacing:.16em; color:#fff;">CREW LEDGER</div>
+      <div style="color:#9A9DA0; font-size:14px; margin-top:6px;">Time, requests, and payroll — one book.</div>
+    </div>
+    <div class="box">
+      <label class="field"><div class="lbl">Account</div>
+        <select id="loginUser"></select>
+      </label>
+      <label class="field"><div class="lbl">PIN</div>
+        <input id="loginPin" type="password" inputmode="numeric" placeholder="••••" />
+        <div class="hint">Demo PINs — Admin: 7777 · Crew: 1111</div>
+      </label>
+      <div id="loginErr" class="err hidden"></div>
+      <button class="btn full" onclick="doLogin()"><span>Clock in</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header>
+    <div class="head-in">
+      <div class="head-left">
+        <div class="wm"><div class="a" style="font-size:28px;">SIETE</div><div class="b" style="font-size:9px;">Land &amp; Concrete</div></div>
+        <div class="head-tag">CREW LEDGER</div>
+      </div>
+      <div style="text-align:right;">
+        <div id="meName" style="color:#fff; font-weight:600; font-size:14px;"></div>
+        <button class="signout" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <div class="tabs"><div id="tabs" class="tabs-in"></div></div>
+  <main id="view"></main>
+</div>
+
+<div id="toast" class="toast"><span></span></div>
+
+<script>
+/* =========================================================
+   SIETE Crew Ledger — vanilla, no build step, localStorage.
+   Drop into a repo as index.html and Netlify-link it.
+   ========================================================= */
+const KEY = "siete-crew-ledger-v1";
+
+const seed = () => ({
+  users:[
+    {id:"admin-1", name:"Mario R.", pin:"7777", role:"admin"},
+    {id:"emp-1", name:"J. Delgado", pin:"1111", role:"employee",
+     payType:"hourly", rate:28, salaryPerPeriod:0, taxPct:15},
+  ],
+  entries:[], requests:[],
+});
+
+let DB = load();
+let ME = null;
+let TAB = null;
+
+function load(){ try{ const r=localStorage.getItem(KEY); return r?JSON.parse(r):seed(); }catch{ return seed(); } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
+
+const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const money = n => (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = () => new Date().toISOString().slice(0,10);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function fmtDate(iso){ if(!iso) return "—"; const [y,m,d]=iso.split("-"); return `${m}/${d}/${y.slice(2)}`; }
+const nameOf = id => (DB.users.find(u=>u.id===id)||{}).name || "Unknown";
+
+let toastTimer;
+function ping(msg){
+  const t=document.getElementById("toast");
+  t.querySelector("span").textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* ---------- payroll ---------- */
+function payrollFor(user, paidFilter){
+  const match = x => x.userId===user.id && x.status==="approved" && !!x.paid===paidFilter;
+  const myEntries = DB.entries.filter(match);
+  const myReqs = DB.requests.filter(match);
+  const hours = myEntries.reduce((s,e)=>s+Number(e.hours||0),0);
+  const gross = user.payType==="hourly"
+    ? hours*Number(user.rate||0)
+    : (myEntries.length>0 ? Number(user.salaryPerPeriod||0) : 0);
+  const tax = gross*(Number(user.taxPct||0)/100);
+  const reimb = myReqs.reduce((s,r)=>s+Number(r.amount||0),0);
+  const net = gross - tax + reimb;
+  return {hours, gross, tax, reimb, net};
+}
+
+/* ---------- login ---------- */
+function renderLogin(){
+  const sel=document.getElementById("loginUser");
+  sel.innerHTML = DB.users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${u.role==="admin"?"Admin":"Crew"}</option>`).join("");
+}
+function doLogin(){
+  const id=document.getElementById("loginUser").value;
+  const pin=document.getElementById("loginPin").value.trim();
+  const err=document.getElementById("loginErr");
+  const u=DB.users.find(x=>x.id===id);
+  if(!u) return;
+  if(u.pin!==pin){ err.textContent="Wrong PIN. Try again."; err.classList.remove("hidden"); return; }
+  err.classList.add("hidden");
+  ME=u; TAB = u.role==="admin" ? "approvals" : "time";
+  document.getElementById("loginPin").value="";
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  render();
+}
+function signOut(){
+  ME=null; TAB=null;
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
+  renderLogin();
+}
+
+/* ---------- shell ---------- */
+function render(){
+  document.getElementById("meName").textContent=ME.name;
+  const isAdmin = ME.role==="admin";
+  const tabs = isAdmin
+    ? [["approvals","Approvals"],["payroll","Payroll"],["team","Team"]]
+    : [["time","My Time"],["requests","Requests"],["pay","My Pay"]];
+  const pending = DB.entries.filter(e=>e.status==="pending").length + DB.requests.filter(r=>r.status==="pending").length;
+  document.getElementById("tabs").innerHTML = tabs.map(([id,label])=>{
+    const badge = (isAdmin && id==="approvals" && pending>0) ? `<span class="badge">${pending}</span>` : "";
+    return `<button class="tab ${TAB===id?"active":""}" onclick="go('${id}')">${label}${badge}</button>`;
+  }).join("");
+  const v=document.getElementById("view");
+  if(TAB==="time") v.innerHTML=viewTime();
+  else if(TAB==="requests") v.innerHTML=viewRequests();
+  else if(TAB==="pay") v.innerHTML=viewPay();
+  else if(TAB==="approvals") v.innerHTML=viewApprovals();
+  else if(TAB==="payroll") v.innerHTML=viewPayroll();
+  else if(TAB==="team") v.innerHTML=viewTeam();
+}
+function go(id){ TAB=id; render(); }
+
+function secTitle(t){ return `<div class="sec-title"><h2><span class="slash">/</span> ${t}</h2></div>`; }
+function chip(s){ const m={pending:"PENDING",approved:"APPROVED",declined:"DECLINED",paid:"PAID"}; return `<span class="chip ${s}"><span>${m[s]||s}</span></span>`; }
+function empty(t){ return `<div class="empty">${t}</div>`; }
+
+/* ---------- employee: time ---------- */
+function viewTime(){
+  const mine = DB.entries.filter(e=>e.userId===ME.id).sort((a,b)=>a.date<b.date?1:-1);
+  const list = mine.length ? mine.map(e=>`
+    <div class="card thin">
+      <div class="row">
+        <div><span class="mono" style="font-weight:700;font-size:15px;">${fmtDate(e.date)}</span>
+          <span class="steel" style="margin:0 10px;">·</span>
+          <span style="font-weight:600;">${e.hours} hrs</span></div>
+        ${chip(e.paid?"paid":e.status)}
+      </div>
+      <div class="steel" style="font-size:14px;margin-top:6px;">${esc(e.notes)}</div>
+    </div>`).join("") : empty("No time logged yet. Submit your first entry above.");
+  return `
+    ${secTitle("Log time")}
+    <div class="card">
+      <div class="grid2">
+        <label class="field"><div class="lbl">Date</div><input id="t_date" type="date" value="${today()}" /></label>
+        <label class="field"><div class="lbl">Hours</div><input id="t_hours" type="number" min="0.25" step="0.25" placeholder="8" /></label>
+      </div>
+      <label class="field"><div class="lbl">Notes (required)</div>
+        <textarea id="t_notes" placeholder="Job site, tasks completed, materials…"></textarea></label>
+      <div id="t_err" class="err hidden"></div>
+      <button class="btn" onclick="submitTime()"><span>Submit time</span></button>
+    </div>
+    ${secTitle("My entries")}${list}`;
+}
+function submitTime(){
+  const date=document.getElementById("t_date").value;
+  const hours=Number(document.getElementById("t_hours").value);
+  const notes=document.getElementById("t_notes").value.trim();
+  const err=document.getElementById("t_err");
+  const fail=m=>{err.textContent=m; err.classList.remove("hidden");};
+  if(!date) return fail("Pick a date.");
+  if(!hours||hours<=0||hours>24) return fail("Enter hours between 0 and 24.");
+  if(!notes) return fail("Notes are required — what did you work on?");
+  DB.entries.unshift({id:uid(),userId:ME.id,date,hours,notes,status:"pending",paid:false,createdAt:Date.now()});
+  save(); ping("Time submitted for approval"); render();
+}
+
+/* ---------- employee: requests ---------- */
+let REQ_TYPE="reimbursement";
+function viewRequests(){
+  const mine = DB.requests.filter(r=>r.userId===ME.id).sort((a,b)=>b.createdAt-a.createdAt);
+  const list = mine.length ? mine.map(r=>`
+    <div class="card thin">
+      <div class="row">
+        <div>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:14px;color:var(--red);">${r.type==="perdiem"?"Per Diem":"Reimbursement"}</span>
+          <span class="steel" style="margin:0 10px;">·</span>
+          <span class="mono" style="font-size:14px;">${fmtDate(r.date)}</span>
+          <span class="steel" style="margin:0 10px;">·</span>
+          <span class="mono" style="font-weight:700;">${money(r.amount)}</span>
+        </div>
+        ${chip(r.paid?"paid":r.status)}
+      </div>
+      <div class="steel" style="font-size:14px;margin-top:6px;">${esc(r.notes)}</div>
+    </div>`).join("") : empty("No requests yet.");
+  const ph = REQ_TYPE==="perdiem" ? "Travel days, job location…" : "What you bought, vendor, receipt info…";
+  return `
+    ${secTitle("New request")}
+    <div class="card">
+      <div class="seg">
+        <button class="${REQ_TYPE==="reimbursement"?"on":""}" onclick="setReqType('reimbursement')">Reimbursement</button>
+        <button class="${REQ_TYPE==="perdiem"?"on":""}" onclick="setReqType('perdiem')">Per Diem</button>
+      </div>
+      <div class="grid2">
+        <label class="field"><div class="lbl">Date</div><input id="r_date" type="date" value="${today()}" /></label>
+        <label class="field"><div class="lbl">Amount ($)</div><input id="r_amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+      </div>
+      <label class="field"><div class="lbl">Notes (required)</div>
+        <textarea id="r_notes" placeholder="${ph}"></textarea></label>
+      <div id="r_err" class="err hidden"></div>
+      <button class="btn" onclick="submitReq()"><span>Submit request</span></button>
+    </div>
+    ${secTitle("My requests")}${list}`;
+}
+function setReqType(t){ REQ_TYPE=t; render(); }
+function submitReq(){
+  const date=document.getElementById("r_date").value;
+  const amount=Number(document.getElementById("r_amount").value);
+  const notes=document.getElementById("r_notes").value.trim();
+  const err=document.getElementById("r_err");
+  const fail=m=>{err.textContent=m; err.classList.remove("hidden");};
+  if(!date) return fail("Pick a date.");
+  if(!amount||amount<=0) return fail("Enter a valid amount.");
+  if(!notes) return fail("Notes are required — what is this for?");
+  DB.requests.unshift({id:uid(),userId:ME.id,type:REQ_TYPE,date,amount,notes,status:"pending",paid:false,createdAt:Date.now()});
+  save(); ping((REQ_TYPE==="perdiem"?"Per diem":"Reimbursement")+" submitted"); render();
+}
+
+/* ---------- pay stub markup ---------- */
+function payStub(user,p){
+  const grossLabel = user.payType==="hourly"
+    ? `Gross pay — ${p.hours} hrs × ${money(Number(user.rate||0))}/hr`
+    : `Gross pay — salary per period`;
+  return `
+  <div class="card red">
+    <div class="stub-row"><span class="l">${grossLabel}</span><span class="v">${money(p.gross)}</span></div>
+    <div class="stub-row"><span class="l">Tax withholding (${user.taxPct||0}%)</span><span class="v red">−${money(p.tax)}</span></div>
+    <div class="stub-row"><span class="l">Reimbursements + per diem (untaxed)</span><span class="v">+${money(p.reimb)}</span></div>
+    <div class="stub-row bold"><span class="l">Net paycheck</span><span class="v">${money(p.net)}</span></div>
+  </div>`;
+}
+
+/* ---------- employee: pay ---------- */
+function viewPay(){
+  const up=payrollFor(ME,false), paid=payrollFor(ME,true);
+  return `
+    ${secTitle("Next paycheck (approved, unpaid)")}
+    ${payStub(ME,up)}
+    ${secTitle("Paid to date")}
+    <div class="card row">
+      <div class="steel" style="font-size:14px;">${paid.hours} hrs paid · ${money(paid.reimb)} in requests</div>
+      <div class="mono" style="font-weight:700;font-size:20px;">${money(paid.net)}</div>
+    </div>`;
+}
+
+/* ---------- admin: approvals ---------- */
+function itemLabel(i){ return i.kind==="entry" ? `${i.hours} hrs` : `${i.type==="perdiem"?"Per diem":"Reimbursement"} · ${money(i.amount)}`; }
+function viewApprovals(){
+  const pending=[
+    ...DB.entries.filter(e=>e.status==="pending").map(e=>({...e,kind:"entry"})),
+    ...DB.requests.filter(r=>r.status==="pending").map(r=>({...r,kind:"request"})),
+  ].sort((a,b)=>a.createdAt-b.createdAt);
+  const pendHtml = pending.length ? pending.map(i=>`
+    <div class="card" style="border-left:4px solid var(--red);border-top:1px solid var(--line);">
+      <div class="row">
+        <div>
+          <div style="font-weight:700;font-size:15px;">${esc(nameOf(i.userId))}
+            <span class="steel" style="margin:0 8px;">·</span>
+            <span class="mono" style="font-size:14px;">${fmtDate(i.date)}</span>
+            <span class="steel" style="margin:0 8px;">·</span>${itemLabel(i)}</div>
+          <div class="steel" style="font-size:14px;margin-top:5px;max-width:520px;">${esc(i.notes)}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn sm ok" onclick="decide('${i.kind}','${i.id}','approved')"><span>Approve</span></button>
+          <button class="btn sm danger" onclick="decide('${i.kind}','${i.id}','declined')"><span>Decline</span></button>
+        </div>
+      </div>
+    </div>`).join("") : empty("Queue is clear. Nothing waiting on you.");
+  const history=[
+    ...DB.entries.filter(e=>e.status!=="pending").map(e=>({...e,kind:"entry"})),
+    ...DB.requests.filter(r=>r.status!=="pending").map(r=>({...r,kind:"request"})),
+  ].sort((a,b)=>b.createdAt-a.createdAt).slice(0,12);
+  const histHtml = history.length ? history.map(i=>`
+    <div class="card thin">
+      <div class="row">
+        <div style="font-size:14px;"><b>${esc(nameOf(i.userId))}</b>
+          <span class="steel" style="margin:0 8px;">·</span>${fmtDate(i.date)} · ${itemLabel(i)}</div>
+        ${chip(i.paid?"paid":i.status)}
+      </div>
+    </div>`).join("") : empty("No decisions yet.");
+  return `${secTitle("Pending approval")}${pendHtml}${secTitle("Recent decisions")}${histHtml}`;
+}
+function decide(kind,id,status){
+  const arr = kind==="entry" ? DB.entries : DB.requests;
+  const it = arr.find(x=>x.id===id); if(it) it.status=status;
+  save(); ping(status==="approved"?"Approved":"Declined"); render();
+}
+
+/* ---------- admin: payroll ---------- */
+function viewPayroll(){
+  const emps=DB.users.filter(u=>u.role==="employee");
+  const tot=emps.reduce((a,u)=>{const p=payrollFor(u,false);a.gross+=p.gross;a.tax+=p.tax;a.reimb+=p.reimb;a.net+=p.net;return a;},{gross:0,tax:0,reimb:0,net:0});
+  const totals=`
+    <div class="card" style="background:var(--ink);border-top:3px solid var(--red);color:#fff;">
+      <div class="totals">
+        <div><div class="k">Gross</div><div class="val">${money(tot.gross)}</div></div>
+        <div><div class="k">Tax</div><div class="val">${money(tot.tax)}</div></div>
+        <div><div class="k">Requests</div><div class="val">${money(tot.reimb)}</div></div>
+        <div><div class="k">Net owed</div><div class="val">${money(tot.net)}</div></div>
+      </div>
+    </div>`;
+  const cards = emps.length ? emps.map(u=>{
+    const p=payrollFor(u,false);
+    const isEmpty = p.gross===0 && p.reimb===0;
+    const meta = u.payType==="hourly"
+      ? `Hourly · ${money(Number(u.rate||0))}/hr · ${u.taxPct||0}% tax`
+      : `Salary · ${money(Number(u.salaryPerPeriod||0))}/period · ${u.taxPct||0}% tax`;
+    return `
+      <div class="card">
+        <div class="row" style="margin-bottom:8px;">
+          <div><div style="font-weight:700;font-size:16px;">${esc(u.name)}</div>
+            <div class="steel" style="font-size:13px;">${meta}</div></div>
+          <button class="btn sm dark" ${isEmpty?"disabled":""} onclick="markPaid('${u.id}')"><span>Mark paid</span></button>
+        </div>
+        ${isEmpty ? `<div class="steel" style="font-size:14px;">Nothing approved for this run.</div>` : payStub(u,p)}
+      </div>`;
+  }).join("") : empty("No employees yet — add your crew in the Team tab.");
+  return `${secTitle("Pay run — approved & unpaid")}${totals}${cards}`;
+}
+function markPaid(userId){
+  const flag = x => x.userId===userId && x.status==="approved" && !x.paid;
+  DB.entries.forEach(e=>{ if(flag(e)) e.paid=true; });
+  DB.requests.forEach(r=>{ if(flag(r)) r.paid=true; });
+  save(); ping("Marked paid — "+nameOf(userId)); render();
+}
+
+/* ---------- admin: team ---------- */
+let EDIT_ID=null;
+let FORM={name:"",pin:"",payType:"hourly",rate:"",salaryPerPeriod:"",taxPct:""};
+function viewTeam(){
+  const emps=DB.users.filter(u=>u.role==="employee");
+  const payField = FORM.payType==="hourly"
+    ? `<label class="field"><div class="lbl">Rate ($/hr)</div><input id="f_rate" type="number" min="0" step="0.5" value="${FORM.rate}" oninput="FORM.rate=this.value" /></label>`
+    : `<label class="field"><div class="lbl">Salary / pay period ($)</div><input id="f_sal" type="number" min="0" step="50" value="${FORM.salaryPerPeriod}" oninput="FORM.salaryPerPeriod=this.value" /></label>`;
+  const list = emps.length ? emps.map(u=>{
+    const meta = u.payType==="hourly"
+      ? `Hourly · ${money(Number(u.rate||0))}/hr`
+      : `Salary · ${money(Number(u.salaryPerPeriod||0))}/period`;
+    return `
+      <div class="card thin">
+        <div class="row">
+          <div><div style="font-weight:700;">${esc(u.name)}</div>
+            <div class="steel" style="font-size:13px;">${meta} · ${u.taxPct||0}% tax · PIN ${esc(u.pin)}</div></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn sm ghost" onclick="startEdit('${u.id}')"><span>Edit</span></button>
+            <button class="btn sm danger" onclick="removeEmp('${u.id}')"><span>Remove</span></button>
+          </div>
+        </div>
+      </div>`;
+  }).join("") : empty("No employees yet.");
+  return `
+    ${secTitle(EDIT_ID?"Edit employee":"Add employee")}
+    <div class="card">
+      <div class="grid2">
+        <label class="field"><div class="lbl">Name</div><input id="f_name" value="${esc(FORM.name)}" oninput="FORM.name=this.value" placeholder="Full name" /></label>
+        <label class="field"><div class="lbl">PIN (4 digits)</div><input id="f_pin" value="${esc(FORM.pin)}" oninput="FORM.pin=this.value" maxlength="4" placeholder="0000" /></label>
+      </div>
+      <div class="grid3">
+        <label class="field"><div class="lbl">Pay type</div>
+          <select id="f_type" onchange="FORM.payType=this.value; render()">
+            <option value="hourly" ${FORM.payType==="hourly"?"selected":""}>Hourly</option>
+            <option value="salary" ${FORM.payType==="salary"?"selected":""}>Salary</option>
+          </select></label>
+        ${payField}
+        <label class="field"><div class="lbl">Tax withholding (%)</div><input id="f_tax" type="number" min="0" max="60" step="0.5" value="${FORM.taxPct}" oninput="FORM.taxPct=this.value" /></label>
+      </div>
+      <div id="f_err" class="err hidden"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn" onclick="saveEmp()"><span>${EDIT_ID?"Save changes":"Add employee"}</span></button>
+        ${EDIT_ID?`<button class="btn ghost" onclick="cancelEdit()"><span>Cancel</span></button>`:""}
+      </div>
+    </div>
+    ${secTitle("Crew")}${list}`;
+}
+function saveEmp(){
+  const err=document.getElementById("f_err");
+  const fail=m=>{err.textContent=m; err.classList.remove("hidden");};
+  if(!FORM.name.trim()) return fail("Name is required.");
+  if(!/^\d{4}$/.test(FORM.pin)) return fail("PIN must be 4 digits.");
+  if(FORM.payType==="hourly" && !(Number(FORM.rate)>0)) return fail("Enter an hourly rate.");
+  if(FORM.payType==="salary" && !(Number(FORM.salaryPerPeriod)>0)) return fail("Enter salary per pay period.");
+  const tax=Number(FORM.taxPct);
+  if(!(FORM.taxPct!=="" && tax>=0 && tax<=60)) return fail("Tax % must be between 0 and 60.");
+  const rec={name:FORM.name.trim(),pin:FORM.pin,payType:FORM.payType,
+    rate:Number(FORM.rate||0),salaryPerPeriod:Number(FORM.salaryPerPeriod||0),taxPct:tax,role:"employee"};
+  if(EDIT_ID){ const u=DB.users.find(x=>x.id===EDIT_ID); Object.assign(u,rec); ping("Employee updated"); }
+  else{ DB.users.push({id:uid(),...rec}); ping("Employee added"); }
+  save(); EDIT_ID=null; FORM={name:"",pin:"",payType:"hourly",rate:"",salaryPerPeriod:"",taxPct:""}; render();
+}
+function startEdit(id){
+  const u=DB.users.find(x=>x.id===id); EDIT_ID=id;
+  FORM={name:u.name,pin:u.pin,payType:u.payType,rate:u.rate||"",salaryPerPeriod:u.salaryPerPeriod||"",taxPct:u.taxPct??""};
+  render(); window.scrollTo({top:0,behavior:"smooth"});
+}
+function cancelEdit(){ EDIT_ID=null; FORM={name:"",pin:"",payType:"hourly",rate:"",salaryPerPeriod:"",taxPct:""}; render(); }
+function removeEmp(id){
+  DB.users=DB.users.filter(u=>u.id!==id);
+  DB.entries=DB.entries.filter(e=>e.userId!==id);
+  DB.requests=DB.requests.filter(r=>r.userId!==id);
+  if(EDIT_ID===id){ EDIT_ID=null; FORM={name:"",pin:"",payType:"hourly",rate:"",salaryPerPeriod:"",taxPct:""}; }
+  save(); ping("Employee removed"); render();
+}
+
+/* ---------- boot ---------- */
+document.getElementById("loginPin").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
+renderLogin();
+</script>
+</body>
+</html>
