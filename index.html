@@ -647,6 +647,99 @@
   .stubmeta{font-size:12px; color:var(--steel); margin-top:2px;}
   .stubnet{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; white-space:nowrap;}
   .stubchev{color:var(--steel); font-weight:400; margin-left:4px;}
+
+  /* ============================================================
+     COLOUR SYSTEM
+     Red is the brand and is reserved for TODAY and primary actions.
+     Day state carries its own colour so a glance answers "where am I
+     short?" without reading a single number.
+     ============================================================ */
+  :root{
+    --done:#1E7B3C;  --done-bg:#EAF4ED;
+    --part:#B07A00;  --part-bg:#FFF6E3;
+    --over:#8E151C;  --over-bg:#FBE9EA;
+    --idle:#A9ADB1;  --idle-bg:#F1EFEC;
+    --ink-2:#3D4145;
+  }
+
+  /* charge-code hues — muted, small, and only ever chips */
+  .codechip.h1{background:#FBE3E4; color:#9B1F26;}   /* field work  */
+  .codechip.h2{background:#E2ECF7; color:#1F4E79;}   /* driving     */
+  .codechip.h3{background:#E7F1EA; color:#1E6B38;}   /* shop        */
+  .codechip.h4{background:#F3E9F7; color:#5C2D6B;}   /* meetings    */
+  .codechip.h5{background:#FFF1DE; color:#8A5A00;}   /* estimating  */
+  .codechip.h6{background:#E4F0F1; color:#1D5F63;}   /* other       */
+
+  @media (min-width:821px){
+    /* ---------- focus layout: today wide, the rest collapsed ---------- */
+    .weekgrid{display:flex; gap:8px; align-items:flex-start;}
+    .daycol{flex:1 1 0; min-width:0; background:var(--idle-bg); border:1px solid var(--line);
+      transition:flex-grow .22s ease, background .18s, box-shadow .18s; overflow:hidden;}
+    .daycol h4{cursor:pointer; user-select:none;}
+    .daycol:not(.active-day):hover{background:#fff; box-shadow:var(--sh-1);}
+
+    /* the one you're working on */
+    .daycol.active-day{flex:4.2 1 0; background:#fff; box-shadow:var(--sh-2); border-color:#D8D5D0;}
+
+    /* state colours on the top edge */
+    .daycol{border-top:3px solid var(--idle);}
+    .daycol.s-done{border-top-color:var(--done);}
+    .daycol.s-part{border-top-color:var(--part);}
+    .daycol.s-over{border-top-color:var(--over);}
+    .daycol.s-empty{border-top-color:var(--idle);}
+    .daycol.today{border-top-color:var(--red); border-top-width:4px;}
+
+    .daycol h4 .day-title{color:var(--ink-2);}
+    .daycol.today h4 .day-title{color:var(--red);}
+    .daycol.active-day h4 .day-title{color:var(--ink);}
+    .daycol.today.active-day h4 .day-title{color:var(--red);}
+    .daycol.weekend{background:#EDEBE7;}
+    .daycol.weekend.active-day{background:#fff;}
+    .daycol.weekend h4 .day-title{color:var(--steel);}
+
+    /* ---------- collapsed: name, date, hours. nothing else ---------- */
+    .daycol:not(.active-day) .day-progress{display:none;}
+    .daycol:not(.active-day) .entry-note,
+    .daycol:not(.active-day) .entry-project,
+    .daycol:not(.active-day) .entry-menu-btn,
+    .daycol:not(.active-day) .entry-hours,
+    .daycol:not(.active-day) .day-empty,
+    .daycol:not(.active-day) .addline{display:none;}
+    .daycol:not(.active-day) .daybody{padding:7px; gap:5px;}
+    .daycol:not(.active-day) .entrycard{border:0; box-shadow:none; background:transparent;}
+    .daycol:not(.active-day) .entrysummary{display:block;}
+    .daycol:not(.active-day) .entry-toggle{padding:2px; display:block; width:100%;}
+    .daycol:not(.active-day) .entry-main{display:block;}
+    .daycol:not(.active-day) .codechip{margin:0; width:100%; text-align:center; padding:3px 0; font-size:10px;}
+    .day-mini{display:block; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px;
+      color:var(--ink); margin-top:5px; line-height:1.15;}
+    .day-mini-n{display:block; font-family:'Barlow',sans-serif; font-weight:400; font-size:11px; color:var(--steel); margin-top:1px;}
+    .daycol.s-done .day-mini{color:var(--done);}
+    .daycol.s-part .day-mini{color:var(--part);}
+    .daycol.s-over .day-mini{color:var(--over);}
+    .daycol.s-empty .day-mini{color:var(--idle);}
+    .daycol.active-day .day-mini{display:none;}        /* the full progress line takes over */
+
+    /* ---------- expanded ---------- */
+    .daycol.active-day .daybody{padding:11px; gap:9px;}
+    .daycol.active-day .entrycard{background:#fff; border:1px solid var(--line); border-left:3px solid var(--red);}
+    .daycol.active-day .entry-project{font-size:14px;}
+    .daycol.active-day .entry-note{font-size:12.5px; -webkit-line-clamp:2;}
+    .daycol.active-day .entry-hours{font-size:13px;}
+    .daycol.active-day .entry-menu-btn{display:block;}
+    .daycol.active-day .addline{display:block;}
+    .daycol.active-day h4 .remaining{font-size:11px;}
+    .daycol.active-day h4 .remaining.complete{color:var(--done);}
+    .daycol.s-part.active-day h4 .remaining{color:var(--part);}
+    .daycol.s-over.active-day h4 .remaining{color:var(--over);}
+
+    /* today badge instead of shouting in red everywhere */
+    .daycol.today h4 .day-title::after{content:"TODAY"; display:inline-block; margin-left:6px;
+      background:var(--red); color:#fff; font-size:9px; letter-spacing:.1em; padding:1px 5px;
+      vertical-align:middle; transform:skewX(-10deg);}
+    .daycol.today h4 .day-title{font-size:0;}
+    .daycol.today h4 .day-title::before{content:attr(data-day); font-size:14px; letter-spacing:.06em;}
+  }
 </style>
 </head>
 <body>
@@ -744,6 +837,14 @@ async function loadCodes() {
   CODES.forEach((c) => CODE.set(c.id, c));
 }
 const codeLabel = (c) => `${c.code} · ${c.name}`;
+/* A stable colour per charge code, so a week can be read at a glance —
+   all the blue is driving, all the red is field work. Index-based, so it
+   stays put as codes are added. */
+const CODE_HUES = 6;
+function codeHue(id) {
+  const i = CODES.findIndex((c) => c.id === id);
+  return i < 0 ? 0 : (i % CODE_HUES) + 1;
+}
 const defaultCodeId = () => (CODES.find((c) => c.status === "active") || {}).id || null;
 function codeDisplay(e) {
   const c = e.charge_code_id ? CODE.get(e.charge_code_id) : null;
@@ -1043,6 +1144,11 @@ async function viewWeek(v) {
     const remaining = target ? Math.max(0, target - dayTotal) : 0;
     const weekend = i >= 5 ? " weekend" : "";
     const isToday = d === todayStr ? " today" : "";
+    // one status per day so the colour carries information instead of decorating
+    const dayState = dayTotal === 0 ? " s-empty"
+      : (target && dayTotal > target) ? " s-over"
+      : (target && dayTotal >= target) ? " s-done"
+      : " s-part";
 
     const cards = list.map((e) => {
       const expanded = EXPANDED_ENTRIES.has(String(e.id));
@@ -1061,7 +1167,7 @@ async function viewWeek(v) {
           <button type="button" class="entry-toggle" onclick="toggleEntry('${e.id}')" aria-expanded="${expanded}" aria-controls="edit-${e.id}">
             <span class="entry-main">
               <span class="entry-project${projMissing ? " missing" : ""}">${projectLabel}</span>
-              ${codeDisplay(e) ? `<span class="codechip">${esc(codeDisplay(e))}</span>` : `<span class="codechip missing">no work type</span>`}
+              ${codeDisplay(e) ? `<span class="codechip h${codeHue(e.charge_code_id)}">${esc(codeDisplay(e))}</span>` : `<span class="codechip missing">no work type</span>`}
               <span class="entry-note${e.notes && e.notes.trim() ? "" : " missing"}">${noteLabel}</span>
             </span>
             <span class="entry-hours">${e.hours} hrs</span>
@@ -1093,11 +1199,12 @@ async function viewWeek(v) {
       ? dayTotal >= target ? (dayTotal > target ? `${dayTotal - target} hr overtime` : "Day complete") : `${remaining} hrs remaining`
       : dayTotal ? `${dayTotal} hrs logged` : "No time logged";
 
-    cols += `<div class="daycol${weekend}${isToday}${ACTIVE_DAY === d ? " active-day" : ""}" data-work-date="${d}">
-      <h4>
-        <span class="day-title">${DAYS[i]}${isToday ? ` · Today` : ""}</span>
+    cols += `<div class="daycol${weekend}${isToday}${dayState}${ACTIVE_DAY === d ? " active-day" : ""}" data-work-date="${d}">
+      <h4 onclick="goToDay('${d}')" title="Open ${DAYS[i]}">
+        <span class="day-title" data-day="${DAYS[i]}">${DAYS[i]}</span>
         <span class="dt">${fmtDate(d)}</span>
         <span class="day-progress"><span class="tot">${target ? `${dayTotal} / ${target} hrs` : `${dayTotal} hrs`}</span><span class="remaining${target && dayTotal >= target ? " complete" : ""}">${progressText}</span></span>
+        <span class="day-mini">${dayTotal ? `${n2(dayTotal)}h` : "—"}<span class="day-mini-n">${list.length ? `${list.length} line${list.length > 1 ? "s" : ""}` : "empty"}</span></span>
       </h4>
       <div class="daybody">${body}</div>
     </div>`;
@@ -1230,6 +1337,13 @@ function goToDay(dateISO) {
   const card = grid?.querySelector(`[data-work-date="${dateISO}"]`);
   if (!card) return;
   ACTIVE_DAY = dateISO;
+  // Desktop expands the chosen column in place; there's no rail to scroll.
+  if (isDesktop()) {
+    closeEntryMenus();
+    grid.querySelectorAll(".daycol.active-day").forEach((c) => c.classList.remove("active-day"));
+    card.classList.add("active-day");
+    return;
+  }
   closeEntryMenus();
   EXPANDED_ENTRIES.clear();
   document.querySelectorAll(".entrycard.open").forEach((entry) => {
