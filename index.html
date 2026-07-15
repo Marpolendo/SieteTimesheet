@@ -630,6 +630,23 @@
   @media (max-width:820px){
     .tab{padding:12px 14px; font-size:15px;}
   }
+
+  /* ---- charge codes + stubs + row actions ---- */
+  .codechip{display:inline-block; margin-top:3px; background:#EEF0F1; color:var(--steel);
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:10px; letter-spacing:.04em;
+    padding:1px 6px; border-radius:4px;}
+  .codechip.missing{background:#FBE3E4; color:var(--red);}
+  .codedesc{font-size:12px; color:var(--steel); margin-top:4px; line-height:1.35;}
+  .reqrow-foot{justify-content:space-between; flex-wrap:wrap; gap:8px;}
+  .reqrow-actions{display:flex; gap:6px; margin-left:auto;}
+  .stubrow{width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:#fff; border:0; border-left:4px solid var(--ok); border-radius:10px; box-shadow:var(--sh-card);
+    padding:13px 14px; margin-bottom:9px; text-align:left; transition:box-shadow .15s;}
+  .stubrow:hover{box-shadow:var(--sh-2);}
+  .stubdate{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:16px; letter-spacing:.04em;}
+  .stubmeta{font-size:12px; color:var(--steel); margin-top:2px;}
+  .stubnet{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; white-space:nowrap;}
+  .stubchev{color:var(--steel); font-weight:400; margin-left:4px;}
 </style>
 </head>
 <body>
@@ -713,6 +730,30 @@ async function loadProjects() {
   PROJECTS.forEach((p) => PROJ.set(p.id, p));
 }
 const projLabel = (p) => `${p.number} · ${p.name}`;
+
+/* ---------- charge codes ----------
+   The project answers "which job ate this cost". The charge code answers
+   "what kind of labor was it" — which is the split an accountant needs. */
+let CODES = [];
+let LAST_CODE_ID = null;
+const CODE = new Map();
+async function loadCodes() {
+  const { data, error } = await sb.from("charge_codes").select("*").order("sort").order("code");
+  CODES = error ? [] : (data || []);
+  CODE.clear();
+  CODES.forEach((c) => CODE.set(c.id, c));
+}
+const codeLabel = (c) => `${c.code} · ${c.name}`;
+const defaultCodeId = () => (CODES.find((c) => c.status === "active") || {}).id || null;
+function codeDisplay(e) {
+  const c = e.charge_code_id ? CODE.get(e.charge_code_id) : null;
+  return c ? c.code : "";
+}
+function codeOptions(selectedId) {
+  const list = CODES.filter((c) => c.status === "active" || c.id === selectedId);
+  return `<option value="">— Select work type —</option>` +
+    list.map((c) => `<option value="${c.id}"${c.id === selectedId ? " selected" : ""}>${esc(codeLabel(c))}${c.status === "archived" ? " (archived)" : ""}</option>`).join("");
+}
 /* Entries keep a text snapshot of the name, so old rows and any pre-projects
    data still read correctly even though reports group on project_id. */
 function projDisplay(e) {
@@ -829,7 +870,7 @@ async function afterLogin() {
   const { data: prof, error } = await sb.from("profiles").select("*").eq("id", myId).single();
   if (error || !prof) { await sb.auth.signOut(); return showLogin(); }
   ME = prof;
-  await loadProjects();
+  await Promise.all([loadProjects(), loadCodes()]);
   TAB = ME.role === "admin" ? "approvals" : "week";
   WEEK = mondayOf(todayISO());
   $("boot").classList.add("hidden");
@@ -887,7 +928,7 @@ async function savePinChange(email) {
 async function render() {
   const isAdmin = ME.role === "admin";
   const tabs = isAdmin
-    ? [["approvals", "Approvals"], ["payroll", "Payroll"], ["reports", "Reports"], ["projects", "Projects"], ["team", "Team"]]
+    ? [["approvals", "Approvals"], ["payroll", "Payroll"], ["reports", "Reports"], ["projects", "Projects"], ["codes", "Codes"], ["team", "Team"]]
     : [["week", "My Week"], ["requests", "Requests"], ["pay", "My Pay"]];
 
   let pending = 0;
@@ -915,6 +956,7 @@ async function render() {
     else if (TAB === "payroll") await viewPayroll(v);
     else if (TAB === "reports") await viewReports(v);
     else if (TAB === "projects") await viewProjects(v);
+    else if (TAB === "codes") await viewCodes(v);
     else if (TAB === "team") await viewTeam(v);
   } catch (e) { fail(e); v.innerHTML = `<div class="banner bad">Could not load this view. ${esc(e.message || "")}</div>`; }
 }
@@ -1019,6 +1061,7 @@ async function viewWeek(v) {
           <button type="button" class="entry-toggle" onclick="toggleEntry('${e.id}')" aria-expanded="${expanded}" aria-controls="edit-${e.id}">
             <span class="entry-main">
               <span class="entry-project${projMissing ? " missing" : ""}">${projectLabel}</span>
+              ${codeDisplay(e) ? `<span class="codechip">${esc(codeDisplay(e))}</span>` : `<span class="codechip missing">no work type</span>`}
               <span class="entry-note${e.notes && e.notes.trim() ? "" : " missing"}">${noteLabel}</span>
             </span>
             <span class="entry-hours">${e.hours} hrs</span>
@@ -1033,6 +1076,7 @@ async function viewWeek(v) {
         </div>
         <div class="entryedit" id="edit-${e.id}">
           <label class="field"><div class="lbl">Project</div><select class="proj-select" onchange="editEntry('${e.id}','project_id',this.value)">${projectOptions(e.project_id, e.project)}</select></label>
+          <label class="field"><div class="lbl">Work type</div><select class="proj-select" onchange="editEntry('${e.id}','charge_code_id',this.value)">${codeOptions(e.charge_code_id)}</select></label>
           <label class="field"><div class="lbl">Hours</div><div class="hours-wrap"><input aria-label="Hours" type="number" min="0.25" max="24" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="Hours (0.25 = 15 min)" /><span class="hours-unit">hrs</span></div></label>
           <label class="field"><div class="lbl">Notes</div><textarea placeholder="What work was completed?" onchange="editEntry('${e.id}','notes',this.value)">${esc(e.notes)}</textarea></label>
           <div class="entry-actions">
@@ -1083,7 +1127,9 @@ async function viewWeek(v) {
 
   let actions = "";
   if (editable) actions = `<button class="btn" onclick="confirmSubmitWeek()" ${totalHrs === 0 ? "disabled" : ""}><span>Submit week</span></button>`;
+  else if (status === "submitted") actions = `<button class="btn ghost" onclick="recallWeek('${sheet.id}')"><span>Recall submission</span></button>`;
   else if (status === "approved" && !openCR) actions = `<button class="btn ghost" onclick="openChange('${sheet.id}', ${sheet.paid})"><span>Request change</span></button>`;
+  else if (status === "approved" && openCR) actions = `<button class="btn ghost" onclick="cancelChange('${openCR.id}')"><span>Cancel change request</span></button>`;
 
   const currentWeekStart = mondayOf(todayISO());
   const previousWeek = addDays(WEEK, -7);
@@ -1234,13 +1280,14 @@ function focusEntryProject(id) {
 async function duplicateEntry(id) {
   closeEntryMenus();
   try {
-    const { data: source, error: readError } = await sb.from("time_entries").select("timesheet_id,work_date,project,project_id,hours,notes").eq("id", id).single();
+    const { data: source, error: readError } = await sb.from("time_entries").select("timesheet_id,work_date,project,project_id,charge_code_id,hours,notes").eq("id", id).single();
     if (readError) throw readError;
     const { data, error } = await sb.from("time_entries").insert({
       timesheet_id: source.timesheet_id,
       work_date: source.work_date,
       project: source.project || "",
       project_id: source.project_id || null,
+      charge_code_id: source.charge_code_id || null,
       hours: Number(source.hours || 1),
       notes: source.notes || ""
     }).select("id").single();
@@ -1272,6 +1319,22 @@ function toggleWeekMenu(event) {
   backdrop?.classList.toggle("hidden", !opening);
   button.setAttribute("aria-expanded", String(opening));
   if (opening) setTimeout(() => menu.querySelector(".week-menu-item:not([disabled])")?.focus(), 0);
+}
+/* Pull a week back out of the queue — only works while it's still
+   sitting unreviewed. Once approved it's locked and you file a change. */
+async function recallWeek(id) {
+  if (!confirm("Pull this week back so you can edit it?\n\nIt leaves your admin's approval queue until you submit again.")) return;
+  const { error } = await sb.from("timesheets").update({ status: "draft" }).eq("id", id);
+  if (error) return fail(error);
+  ping("Week recalled — it's editable again");
+  render();
+}
+async function cancelChange(id) {
+  if (!confirm("Withdraw this change request?")) return;
+  const { error } = await sb.from("change_requests").delete().eq("id", id);
+  if (error) return fail(error);
+  ping("Change request withdrawn");
+  render();
 }
 function chooseWeek(n) { closeWeekMenu(); shiftWeek(n); }
 function chooseThisWeek() { closeWeekMenu(); thisWeek(); }
@@ -1307,6 +1370,8 @@ function openEntryEditor(id) {
     <div class="sec-title"><h2><span class="slash">/</span> ${DAYS[idx]} · ${fmtDate(e.work_date)}</h2></div>
     <label class="field"><div class="lbl">Project</div>
       <select id="me_proj" class="proj-select" onchange="editEntry('${e.id}','project_id',this.value)">${projectOptions(e.project_id, e.project)}</select></label>
+    <label class="field"><div class="lbl">Work type</div>
+      <select class="proj-select" onchange="editEntry('${e.id}','charge_code_id',this.value)">${codeOptions(e.charge_code_id)}</select></label>
     <label class="field"><div class="lbl">Hours</div>
       <div class="hours-wrap"><input type="number" min="0.25" max="24" step="0.25" value="${e.hours}" onchange="editEntry('${e.id}','hours',this.value)" title="0.25 = 15 min" /><span class="hours-unit">hrs</span></div></label>
     <label class="field"><div class="lbl">Notes</div>
@@ -1329,7 +1394,7 @@ async function deleteFromEditor(id) { closeModal(); await delEntry(id); }
 async function addEntry(dateISO) {
   try {
     const sheet = await ensureSheet(WEEK);
-    const { data, error } = await sb.from("time_entries").insert({ timesheet_id: sheet.id, work_date: dateISO, project: "", project_id: LAST_PROJECT_ID || null, hours: 1, notes: "" }).select("id").single();
+    const { data, error } = await sb.from("time_entries").insert({ timesheet_id: sheet.id, work_date: dateISO, project: "", project_id: LAST_PROJECT_ID || null, charge_code_id: LAST_CODE_ID || defaultCodeId(), hours: 1, notes: "" }).select("id").single();
     if (error) throw error;
     ACTIVE_DAY = dateISO;
     EXPANDED_ENTRIES.clear();
@@ -1344,6 +1409,9 @@ async function editEntry(id, field, value) {
     h = Math.round(h * 4) / 4;               // snap to 15-min
     if (!(h > 0) || h > 24) return fail("Hours must be 0.25–24, in 15-minute steps.");
     payload.hours = h;
+  } else if (field === "charge_code_id") {
+    payload.charge_code_id = value || null;
+    LAST_CODE_ID = value || null;
   } else if (field === "project_id") {
     const pr = value ? PROJ.get(value) : null;
     payload.project_id = value || null;
@@ -1358,7 +1426,7 @@ async function editEntry(id, field, value) {
   if (error) { fail(error); return render(); }
   const cached = WEEK_ENTRIES.get(String(id));
   if (cached) Object.assign(cached, payload);
-  if (field === "hours" || field === "project_id") { await render(); markSaved(id); } // refresh totals / label
+  if (field === "hours" || field === "project_id" || field === "charge_code_id") { await render(); markSaved(id); } // refresh totals / labels
   else markSaved(id);
 }
 function delEntry(id) {
@@ -1405,6 +1473,8 @@ async function submitWeek() {
   if (entries.length === 0) return fail("Add at least one line before submitting.");
   const noProject = entries.find((e) => !e.project_id && !(e.project || "").trim());
   if (noProject) return fail("Every line needs a project before you can submit.");
+  const noCode = entries.find((e) => !e.charge_code_id);
+  if (noCode) return fail("Every line needs a work type before you can submit.");
   const bad = entries.find((e) => !e.notes || !e.notes.trim());
   if (bad) return fail("Every line needs a note before you can submit.");
   const { error } = await sb.from("timesheets").update({ status: "submitted" }).eq("id", sheet.id);
@@ -1464,7 +1534,13 @@ async function viewRequests(v) {
         </div>
       </div>
       <div class="reqrow-note">${esc(r.notes)}</div>
-      ${receiptTag(r) ? `<div class="reqrow-foot">${receiptTag(r)}</div>` : ""}
+      <div class="reqrow-foot">
+        ${receiptTag(r)}
+        ${r.status === "submitted" ? `<div class="reqrow-actions">
+          <button class="btn sm ghost" onclick='editRequest(${esc(JSON.stringify(r))})'><span>Edit</span></button>
+          <button class="btn sm danger" onclick="cancelRequest('${r.id}')"><span>Cancel</span></button>
+        </div>` : ""}
+      </div>
     </div>`).join("") : emptyBox("No requests yet.");
 
   const perdiem = REQ_TYPE === "perdiem";
@@ -1501,6 +1577,43 @@ async function viewRequests(v) {
       ${sec("My requests")}${list}
     </div>`;
   renderReceiptThumbs();
+}
+
+
+/* A request can be edited or withdrawn right up until your admin decides.
+   After that it's a record of a decision, so it stops being yours to change. */
+function editRequest(r) {
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Edit request</h2></div>
+    <div class="grid2">
+      <label class="field"><div class="lbl">Date</div><input id="er_date" type="date" value="${r.req_date}" /></label>
+      <label class="field"><div class="lbl">Amount</div><input id="er_amt" type="number" inputmode="decimal" min="0" step="0.01" value="${r.amount}" /></label>
+    </div>
+    <label class="field"><div class="lbl">Notes</div><textarea id="er_notes">${esc(r.notes)}</textarea></label>
+    ${(r.receipt_paths || []).length
+      ? `<div class="hint" style="margin-bottom:12px;">${r.receipt_paths.length} receipt${r.receipt_paths.length > 1 ? "s" : ""} attached. To swap photos, cancel this request and submit a new one.</div>`
+      : (r.type === "reimbursement" ? `<div class="banner warn" style="border-radius:9px;font-size:13px;">No receipt attached. To add one, cancel and resubmit with the photo.</div>` : "")}
+    <div id="er_err" class="err hidden"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn" onclick="saveRequest('${r.id}')"><span>Save changes</span></button>
+      <button class="btn ghost" onclick="closeModal()"><span>Cancel</span></button>
+    </div></div></div>`;
+}
+async function saveRequest(id) {
+  const err = $("er_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  const req_date = $("er_date").value, amount = Number($("er_amt").value), notes = $("er_notes").value.trim();
+  if (!req_date) return bad("Pick a date.");
+  if (!amount || amount <= 0) return bad("Enter a valid amount.");
+  if (!notes) return bad("Notes are required.");
+  const { error } = await sb.from("requests").update({ req_date, amount, notes }).eq("id", id);
+  if (error) return bad(error.message);
+  closeModal(); ping("Request updated"); render();
+}
+async function cancelRequest(id) {
+  if (!confirm("Withdraw this request? It won't be sent for approval.")) return;
+  const { error } = await sb.from("requests").delete().eq("id", id);
+  if (error) return fail(error);
+  ping("Request withdrawn"); render();
 }
 
 /* Per diem has no receipt; reimbursement does. */
@@ -1613,18 +1726,78 @@ async function submitReq() {
    EMPLOYEE — MY PAY
    ============================================================ */
 async function viewPay(v) {
-  const [{ data: sheets }, { data: reqs }] = await Promise.all([
-    sb.from("timesheets").select("*, time_entries(hours)").eq("user_id", ME.id).eq("status", "approved"),
-    sb.from("requests").select("*").eq("user_id", ME.id).eq("status", "approved"),
+  const [{ data: sheets }, { data: reqs }, { data: runs }] = await Promise.all([
+    sb.from("timesheets").select("*, time_entries(hours)").eq("user_id", ME.id).eq("status", "approved").eq("paid", false),
+    sb.from("requests").select("*").eq("user_id", ME.id).eq("status", "approved").eq("paid", false),
+    sb.from("pay_runs").select("*").eq("user_id", ME.id).order("run_date", { ascending: false }),
   ]);
-  const upSheets = (sheets || []).filter((s) => !s.paid), paidSheets = (sheets || []).filter((s) => s.paid);
-  const upReqs = (reqs || []).filter((r) => !r.paid), paidReqs = (reqs || []).filter((r) => r.paid);
-  const up = computePay(ME, upSheets, upReqs), pd = computePay(ME, paidSheets, paidReqs);
-  v.innerHTML = `${sec("Next paycheck (approved, unpaid)")}${payStub(ME, up)}
-    ${sec("Paid to date")}
-    <div class="card row"><div class="steel" style="font-size:14px;">${pd.hours} hrs paid · ${money(pd.reimb)} in requests</div>
-      <div class="mono" style="font-weight:700;font-size:20px;">${money(pd.net)}</div></div>`;
+  const up = computePay(ME, sheets || [], reqs || []);
+  const R = runs || [];
+  const year = new Date().getFullYear();
+  const ytd = R.filter((r) => new Date(r.run_date + "T00:00:00").getFullYear() === year);
+  const sum = (arr, k) => arr.reduce((a, x) => a + Number(x[k] || 0), 0);
+
+  const history = R.length ? R.map((r) => `
+    <button type="button" class="stubrow" onclick="openStub('${r.id}')">
+      <div>
+        <div class="stubdate">${fmtDate(r.run_date)}</div>
+        <div class="stubmeta">${r.period_start ? `${fmtDate(r.period_start)} – ${fmtDate(r.period_end)}` : "Earlier payments"} · ${n2(r.total_hours)} hrs${Number(r.ot_hours) > 0 ? ` · ${n2(r.ot_hours)} OT` : ""}</div>
+      </div>
+      <div class="stubnet">${money(r.net)} <span class="stubchev">›</span></div>
+    </button>`).join("") : emptyBox("No pay history yet. Stubs appear here once a pay run goes through.");
+
+  v.innerHTML = `
+    ${sec("Next paycheck (approved, unpaid)")}
+    ${payStub(ME, up)}
+    ${sec(`${year} year to date`)}
+    ${statCards([
+      { k: "Gross", v: money(sum(ytd, "gross")), accent: "red", small: true },
+      { k: "Tax withheld", v: money(sum(ytd, "tax")), small: true },
+      { k: "Net paid", v: money(sum(ytd, "net")), accent: "ok", small: true },
+      { k: "Checks", v: ytd.length },
+    ])}
+    ${sec("Pay history")}
+    ${history}`;
 }
+
+/* A stub is a snapshot taken when the run was created — a later change to
+   someone's rate or tax rate can't quietly rewrite a check already issued. */
+async function openStub(runId) {
+  const { data: r, error } = await sb.from("pay_runs").select("*").eq("id", runId).single();
+  if (error) return fail(error);
+  const [{ data: weeks }, { data: reqs }] = await Promise.all([
+    sb.from("timesheets").select("week_start, time_entries(hours)").eq("pay_run_id", runId).order("week_start"),
+    sb.from("requests").select("*").eq("pay_run_id", runId).order("req_date"),
+  ]);
+  const wkRows = (weeks || []).map((w) => {
+    const hrs = (w.time_entries || []).reduce((a, e) => a + Number(e.hours || 0), 0);
+    return `<div class="stub-row"><span class="l">Week of ${fmtDate(w.week_start)}</span><span class="v">${n2(hrs)} hrs</span></div>`;
+  }).join("");
+  const rqRows = (reqs || []).map((x) =>
+    `<div class="stub-row"><span class="l">${x.type === "perdiem" ? "Per diem" : "Reimbursement"} · ${fmtDate(x.req_date)}</span><span class="v">${money(x.amount)}</span></div>`).join("");
+  const hourly = r.pay_type === "hourly";
+  const reg = Number(r.reg_hours), ot = Number(r.ot_hours), rate = Number(r.rate);
+
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal receipt-modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Pay stub</h2></div>
+    <p class="steel" style="font-size:14px;margin-top:-6px;">Paid ${fmtDate(r.run_date)}${r.period_start ? ` · covers ${fmtDate(r.period_start)} – ${fmtDate(r.period_end)}` : ""}</p>
+    <div class="card red" style="margin-bottom:12px;">
+      ${hourly
+        ? `<div class="stub-row"><span class="l">Regular — ${n2(reg)} hrs × ${money(rate)}/hr</span><span class="v">${money(reg * rate)}</span></div>
+           ${ot > 0 ? `<div class="stub-row"><span class="l">Overtime — ${n2(ot)} hrs × ${money(rate)} × ${r.ot_multiplier}</span><span class="v">${money(ot * rate * Number(r.ot_multiplier))}</span></div>` : ""}`
+        : `<div class="stub-row"><span class="l">Salary</span><span class="v">${money(r.gross)}</span></div>`}
+      <div class="stub-row"><span class="l">Gross pay</span><span class="v">${money(r.gross)}</span></div>
+      <div class="stub-row"><span class="l">Tax withholding (${n2(r.tax_pct)}%)</span><span class="v red">−${money(r.tax)}</span></div>
+      <div class="stub-row"><span class="l">Reimbursements (untaxed)</span><span class="v">+${money(r.reimbursements)}</span></div>
+      <div class="stub-row"><span class="l">Per diem (untaxed)</span><span class="v">+${money(r.per_diem)}</span></div>
+      <div class="stub-row bold"><span class="l">Net paid</span><span class="v">${money(r.net)}</span></div>
+    </div>
+    ${wkRows ? `<div class="lbl" style="margin-bottom:4px;">Weeks included</div><div class="card" style="padding:10px 14px;margin-bottom:12px;">${wkRows}</div>` : ""}
+    ${rqRows ? `<div class="lbl" style="margin-bottom:4px;">Requests included</div><div class="card" style="padding:10px 14px;margin-bottom:12px;">${rqRows}</div>` : ""}
+    <button class="btn ghost" onclick="closeModal()"><span>Close</span></button>
+  </div></div>`;
+}
+
 function payStub(p, x) {
   const rate = Number(p.rate || 0);
   const { mult } = otConf(p);
@@ -1715,6 +1888,18 @@ async function declineSheet(id) {
   const { error } = await sb.from("timesheets").update({ status: "declined", decline_reason: reason || "", decided_at: new Date().toISOString(), decided_by: ME.id }).eq("id", id);
   if (error) return fail(error); ping("Sent back to employee"); render();
 }
+/* Admins can walk a decision back while nothing's been paid on it. */
+async function reopenWeek(id) {
+  if (!confirm("Reopen this approved week?\n\nIt unlocks so the employee can edit and resubmit.")) return;
+  const { error } = await sb.from("timesheets").update({ status: "draft", decline_reason: "Reopened by admin" }).eq("id", id);
+  if (error) return fail(error);
+  ping("Week reopened"); render();
+}
+async function undoReqDecision(id) {
+  const { error } = await sb.from("requests").update({ status: "submitted", decided_at: null, decided_by: null }).eq("id", id);
+  if (error) return fail(error);
+  ping("Back in the queue"); render();
+}
 async function decideReq(id, status) {
   const { error } = await sb.from("requests").update({ status, decided_at: new Date().toISOString(), decided_by: ME.id }).eq("id", id);
   if (error) return fail(error); ping(status === "approved" ? "Approved" : "Declined"); render();
@@ -1767,12 +1952,18 @@ async function viewPayroll(v) {
       </div></div>
     ${cards || emptyBox("No active employees yet.")}`;
 }
+async function undoPayRun(runId, name) {
+  if (!confirm(`Undo the last pay run for ${name}?\n\nThose weeks and requests go back to approved-and-unpaid. Do this only if the check hasn't gone out.`)) return;
+  const { error } = await sb.rpc("undo_pay_run", { p_run: runId });
+  if (error) return fail(error);
+  ping("Pay run undone"); render();
+}
 async function markPaid(userId) {
-  const [{ error: e1 }, { error: e2 }] = await Promise.all([
-    sb.from("timesheets").update({ paid: true }).eq("user_id", userId).eq("status", "approved").eq("paid", false),
-    sb.from("requests").update({ paid: true }).eq("user_id", userId).eq("status", "approved").eq("paid", false),
-  ]);
-  if (e1 || e2) return fail(e1 || e2); ping("Marked paid"); render();
+  // One atomic call: snapshot the stub, then flag the items it covers.
+  const { error } = await sb.rpc("create_pay_run", { p_user: userId });
+  if (error) return fail(error);
+  ping("Paid — stub recorded");
+  render();
 }
 
 /* ============================================================
@@ -2196,6 +2387,123 @@ async function toggleActive(id, active) {
 
 
 
+
+/* ============================================================
+   ADMIN — CHARGE CODES
+   ============================================================ */
+let CODE_SHOW_ARCHIVED = false;
+
+async function viewCodes(v) {
+  await loadCodes();
+  const { data: rows } = await sb.from("time_entries").select("charge_code_id, hours");
+  const hrs = new Map();
+  (rows || []).forEach((r) => {
+    if (!r.charge_code_id) return;
+    hrs.set(r.charge_code_id, (hrs.get(r.charge_code_id) || 0) + Number(r.hours || 0));
+  });
+  const list = CODES.filter((c) => CODE_SHOW_ARCHIVED || c.status === "active");
+  const archived = CODES.filter((c) => c.status === "archived").length;
+
+  const cards = list.length ? list.map((c) => `
+    <div class="projrow ${c.status}">
+      <div class="row">
+        <div style="min-width:0;">
+          <div class="projnum">${esc(c.code)}${c.status === "archived" ? ` <span class="chip draft"><span>ARCHIVED</span></span>` : ""}</div>
+          <div class="projname">${esc(c.name)}</div>
+          <div class="projclient">${c.tax_group ? esc(c.tax_group) : "<i>no tax group</i>"} · ${c.billable ? "Billable" : "Non-billable"}</div>
+          ${c.description ? `<div class="codedesc">${esc(c.description)}</div>` : ""}
+        </div>
+        <div style="text-align:right;white-space:nowrap;">
+          <div class="mono" style="font-weight:700;font-size:16px;">${n2(hrs.get(c.id) || 0)} h</div>
+          <div style="display:flex;gap:6px;margin-top:7px;">
+            <button class="btn sm ghost" onclick='editCode(${esc(JSON.stringify(c))})'><span>Edit</span></button>
+            <button class="btn sm ${c.status === "active" ? "danger" : "ghost"}" onclick="toggleCode('${c.id}','${c.status}')"><span>${c.status === "active" ? "Archive" : "Restore"}</span></button>
+          </div>
+        </div>
+      </div>
+    </div>`).join("") : emptyBox("No charge codes yet.");
+
+  v.innerHTML = `
+    ${sec("Charge codes")}
+    <div class="banner warn" style="border-radius:9px;">
+      <b>What these are for.</b> A charge code records what <i>kind</i> of work an hour was — driving, meetings, construction — separately from which job it went to.
+      That keeps the hours split so your accountant can treat them correctly. <b>The tax-group labels are yours to set; confirm them with your CPA — this app doesn't decide tax treatment.</b>
+    </div>
+
+    ${sec("Add code")}
+    <div class="card">
+      <div class="grid3">
+        <label class="field"><div class="lbl">Code</div><input id="nc_code" placeholder="CON" maxlength="12" /></label>
+        <label class="field"><div class="lbl">Name</div><input id="nc_name" placeholder="Construction work" /></label>
+        <label class="field"><div class="lbl">Tax group</div><input id="nc_group" placeholder="Direct field labor" /></label>
+      </div>
+      <label class="field"><div class="lbl">Description (optional)</div><input id="nc_desc" placeholder="What counts as this code — helps crew pick right" /></label>
+      <div class="grid2">
+        <label class="field"><div class="lbl">Billable to client</div>
+          <select id="nc_bill"><option value="1">Billable</option><option value="0">Non-billable</option></select></label>
+        <label class="field"><div class="lbl">Sort order</div><input id="nc_sort" type="number" value="100" /></label>
+      </div>
+      <div id="nc_err" class="err hidden"></div>
+      <button class="btn" id="nc_add" onclick="addCode()"><span>Add code</span></button>
+    </div>
+
+    ${sec("Codes", `<button class="btn sm ghost" onclick="CODE_SHOW_ARCHIVED=!CODE_SHOW_ARCHIVED;render()"><span>${CODE_SHOW_ARCHIVED ? "Hide" : "Show"} archived${archived ? ` (${archived})` : ""}</span></button>`)}
+    ${cards}`;
+}
+async function addCode() {
+  const err = $("nc_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  err.classList.add("hidden");
+  const code = $("nc_code").value.trim().toUpperCase(), name = $("nc_name").value.trim();
+  if (!code) return bad("Give it a short code.");
+  if (!name) return bad("Give it a name.");
+  if (CODES.some((c) => c.code.toUpperCase() === code)) return bad(`${code} is already used by “${CODES.find((c) => c.code.toUpperCase() === code).name}”.`);
+  $("nc_add").disabled = true;
+  const { error } = await sb.from("charge_codes").insert({
+    code, name, tax_group: $("nc_group").value.trim(), description: $("nc_desc").value.trim(),
+    billable: $("nc_bill").value === "1", sort: Number($("nc_sort").value || 100),
+  });
+  $("nc_add").disabled = false;
+  if (error) return bad(error.message);
+  ping("Code added"); render();
+}
+function editCode(c) {
+  $("modal-root").innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="sec-title"><h2><span class="slash">/</span> Edit charge code</h2></div>
+    <div class="grid2">
+      <label class="field"><div class="lbl">Code</div><input id="cc_code" value="${esc(c.code)}" maxlength="12" /></label>
+      <label class="field"><div class="lbl">Sort order</div><input id="cc_sort" type="number" value="${c.sort}" /></label>
+    </div>
+    <label class="field"><div class="lbl">Name</div><input id="cc_name" value="${esc(c.name)}" /></label>
+    <label class="field"><div class="lbl">Tax group</div><input id="cc_group" value="${esc(c.tax_group || "")}" placeholder="Direct field labor" />
+      <div class="hint">Your accountant's bucket for this kind of labor. Reports total by this.</div></label>
+    <label class="field"><div class="lbl">Description</div><input id="cc_desc" value="${esc(c.description || "")}" /></label>
+    <label class="field"><div class="lbl">Billable</div>
+      <select id="cc_bill"><option value="1" ${c.billable ? "selected" : ""}>Billable</option><option value="0" ${c.billable ? "" : "selected"}>Non-billable</option></select></label>
+    <div id="cc_err" class="err hidden"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn" onclick="saveCode('${c.id}')"><span>Save</span></button>
+      <button class="btn ghost" onclick="closeModal()"><span>Cancel</span></button>
+    </div></div></div>`;
+}
+async function saveCode(id) {
+  const err = $("cc_err"); const bad = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  const code = $("cc_code").value.trim().toUpperCase(), name = $("cc_name").value.trim();
+  if (!code || !name) return bad("Code and name are both required.");
+  if (CODES.some((c) => c.id !== id && c.code.toUpperCase() === code)) return bad(`${code} is already in use.`);
+  const { error } = await sb.from("charge_codes").update({
+    code, name, tax_group: $("cc_group").value.trim(), description: $("cc_desc").value.trim(),
+    billable: $("cc_bill").value === "1", sort: Number($("cc_sort").value || 100),
+  }).eq("id", id);
+  if (error) return bad(error.message);
+  closeModal(); ping("Code updated"); render();
+}
+async function toggleCode(id, status) {
+  const next = status === "active" ? "archived" : "active";
+  const { error } = await sb.from("charge_codes").update({ status: next }).eq("id", id);
+  if (error) return fail(error);
+  ping(next === "archived" ? "Code archived" : "Code restored"); render();
+}
+
 /* ============================================================
    ADMIN — PROJECTS
    Numbered jobs. Crew pick from this list instead of typing, which
@@ -2317,6 +2625,7 @@ const REPORT_TYPES = {
   payroll:   { label: "Payroll register",        blurb: "One row per employee: hours, overtime, gross, tax, reimbursements, net. This is the sheet you hand a bookkeeper." },
   detail:    { label: "Timesheet detail",        blurb: "Every logged line with its note. The audit trail — use it for disputes or a records request." },
   jobcost:   { label: "Job costing by project",  blurb: "Hours and labor cost grouped by project or site. Shows which job is eating the budget." },
+  chargecode:{ label: "Labor by charge code",  blurb: "Hours and cost split by work type and tax group — driving vs. construction vs. meetings. Built for your accountant." },
   overtime:  { label: "Overtime",                blurb: "Only weeks that ran past the overtime threshold, with the premium each one cost." },
   requests:  { label: "Reimbursements & per diem", blurb: "Every request with status, amount, and whether a receipt was attached." },
 };
@@ -2474,12 +2783,14 @@ async function buildReport(type, from, to, who, approvedOnly, proj = "all") {
     const rows = lines.sort((a, b) => a.work_date < b.work_date ? -1 : 1).map((e) => {
       const idx = (new Date(e.work_date + "T00:00:00").getDay() + 6) % 7;
       const pr = e.project_id ? PROJ.get(e.project_id) : null;
-      return [e.work_date, DAYS[idx], nameOfId(P, e.sheet.user_id), pr ? pr.number : "", projName(pr ? pr.name : e.project), n2(e.hours),
+      const cc = e.charge_code_id ? CODE.get(e.charge_code_id) : null;
+      return [e.work_date, DAYS[idx], nameOfId(P, e.sheet.user_id), pr ? pr.number : "", projName(pr ? pr.name : e.project),
+        cc ? cc.code : "", cc ? cc.tax_group : "", n2(e.hours),
         e.notes || "", e.sheet.week_start, e.sheet.status, e.sheet.paid ? "Yes" : "No"];
     });
-    const tot = rows.reduce((a, r) => a + Number(r[5]), 0);
+    const tot = rows.reduce((a, r) => a + Number(r[7]), 0);
     return {
-      headers: ["Date", "Day", "Employee", "Job #", "Project", "Hours", "Notes", "Week of", "Week status", "Paid"],
+      headers: ["Date", "Day", "Employee", "Job #", "Project", "Code", "Tax group", "Hours", "Notes", "Week of", "Week status", "Paid"],
       rows,
       stats: [{ k: "Lines", v: rows.length }, { k: "Hours", v: n2(tot), accent: "red" },
         { k: "Employees", v: new Set(rows.map((r) => r[2])).size }],
@@ -2512,6 +2823,37 @@ async function buildReport(type, from, to, who, approvedOnly, proj = "all") {
       stats: [{ k: "Projects", v: rows.length }, { k: "Hours", v: n2(totH) },
         { k: "Labor cost", v: money(totC), accent: "red" }],
       note: "Labor cost uses each employee's hourly rate. Salaried crew show no labor cost — they have no hourly rate — and the overtime premium isn't split across projects; see the Overtime report for that.",
+    };
+  }
+
+  if (type === "chargecode") {
+    const g = new Map();
+    lines.forEach((e) => {
+      const cc = e.charge_code_id ? CODE.get(e.charge_code_id) : null;
+      const k = cc ? cc.id : "none";
+      const p = P.get(e.sheet.user_id);
+      const rec = g.get(k) || {
+        code: cc ? cc.code : "—", name: cc ? cc.name : "(No work type)",
+        group: cc ? (cc.tax_group || "—") : "—", bill: cc ? cc.billable : false,
+        hrs: 0, cost: 0, n: 0,
+      };
+      rec.hrs += Number(e.hours || 0);
+      rec.cost += Number(e.hours || 0) * Number(p?.rate || 0);
+      rec.n++;
+      g.set(k, rec);
+    });
+    const all = [...g.values()].sort((a, b) => b.hrs - a.hrs);
+    const totH = all.reduce((a, r) => a + r.hrs, 0);
+    const totC = all.reduce((a, r) => a + r.cost, 0);
+    const rows = all.map((r) => [r.code, r.name, r.group, r.bill ? "Billable" : "Non-billable",
+      r.n, n2(r.hrs), totH ? n2(r.hrs / totH * 100) + "%" : "0%", n2(r.cost)]);
+    const groups = [...new Set(all.map((r) => r.group))].length;
+    return {
+      headers: ["Code", "Work type", "Tax group", "Billable", "Entries", "Hours", "% of hours", "Labor cost"],
+      rows, money_cols: [7],
+      stats: [{ k: "Work types", v: rows.length }, { k: "Tax groups", v: groups },
+        { k: "Hours", v: n2(totH) }, { k: "Labor cost", v: money(totC), accent: "red", small: true }],
+      note: "Cost uses each person's hourly rate; salaried crew show no cost, and the overtime premium isn't split across codes. The tax-group labels are the ones you set on the Codes tab — check them with your accountant before filing anything off this.",
     };
   }
 
